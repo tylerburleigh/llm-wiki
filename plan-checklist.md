@@ -36,6 +36,8 @@ Tracks progress on the LLM Wiki implementation. See `plan.md` for details on eac
   - [ ] Test page cleaned up
   - [ ] Lint graph commands tested (`obsidian orphans`, `deadends`, `unresolved`) or fallback documented
   - [ ] Search directory scoping tested (path= or folder=) or fallback documented
+  - [ ] Callout search tested (`[!source]` findable via search) or fallback documented
+  - [ ] Link traversal commands tested (`backlinks`, `links`) or fallback documented
 - [ ] **1.5** `CLAUDE.md` written:
   - [ ] Specifications section (vault layout, frontmatter, TLDR, claim typing, cross-refs, page naming, index format, log format, conventions)
   - [ ] Guidance section (ingest, query, lint, synthesis)

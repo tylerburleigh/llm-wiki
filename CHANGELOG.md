@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-04-13 — Revision 5
+
+CLI test coverage, risk register corrections, and documentation fixes based on full comparative review of all planning documents against source materials (`llm-wiki.md`, `PHILOSOPHY.md`, `intermediate/`, `synthesis/`, `obsidian-cli/`) and Rounds 1-4. See `revisions/revisions-5.md` for full rationale.
+
+### Added
+
+- **Callout search test.** Phase 1.4 now tests whether `[!source]` callout syntax is searchable via `obsidian search:context`. Fallback: grep. New risk register entry. Lint's claim scanning depends on this. (`plan.md`, `plan-checklist.md`)
+- **Link traversal test.** Phase 1.4 now tests `obsidian backlinks` and `obsidian links` with Title Case filenames. Query operations depend on these for following connections. (`plan.md`, `plan-checklist.md`)
+- **README revisions section updated.** Now lists all five revision rounds instead of only the first. (`README.md`)
+
+### Changed
+
+- **Search `path=` risk corrected.** Risk register entry updated: `path=<folder>` IS documented in the CLI reference. Likelihood lowered from Medium to Low. Test retained to confirm behavior matches docs. (`plan.md`)
+- **CHANGELOG principle count fixed.** "Seven principles" corrected to "Eight principles" — the missing one ("start simple") is the most-cited in revision rationale. (`CHANGELOG.md`)
+
 ## 2026-04-13 — Revision 4
 
 Training period, CLI verification, data contract tightening, and guidance additions based on full comparative review of all planning documents against source materials (`llm-wiki.md`, `PHILOSOPHY.md`, `intermediate/`, `synthesis/`, `obsidian-cli/`) and Rounds 1-3. Includes a philosophy check that withdrew two candidate changes. See `revisions/revisions-4.md` for full rationale.
@@ -61,7 +76,7 @@ Major revision to `implementation-proposal.md`, `plan.md`, and `plan-checklist.m
 
 ### Added
 
-- **`PHILOSOPHY.md`** — Design philosophy document. Seven principles: compilation over retrieval, agent as writer, strict/flexible split, epistemic integrity, human as editor-in-chief, schema co-evolution, compounding value.
+- **`PHILOSOPHY.md`** — Design philosophy document. Eight principles: compilation over retrieval, agent as writer, strict/flexible split, epistemic integrity, human as editor-in-chief, schema co-evolution, start simple, compounding value.
 - **`wiki/log.md`** — Chronological operation log restored from the original `llm-wiki.md`. Append-only, parseable with `grep "^### \[" log.md | tail -5`. Integrated into all three operations.
 - **`wiki/synthesis.md`** — Given a real operational role. Updated on every ingest, reviewed during lint.
 - **Generative lint** — Lint now includes a conceptual review phase: the agent identifies thinly covered topics, unanswered questions, and suggested investigations. Not just structural janitorial work.

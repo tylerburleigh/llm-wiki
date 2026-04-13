@@ -145,6 +145,23 @@ obsidian search query=test folder=wiki/entities
 
 If neither syntax filters results by directory, the fallback is: search the full vault and filter results by path prefix in the agent's output, or use grep directly. Document the working approach in CLAUDE.md so the agent doesn't re-discover it each session.
 
+Test callout search:
+
+```bash
+obsidian search:context query="[!source]" path=wiki
+```
+
+If the brackets or exclamation mark prevent literal matching, try quoting or escaping. If callout syntax isn't searchable via the CLI, the fallback is grep: `grep -r "\[!unverified\]" wiki/`. Document the working approach in CLAUDE.md so lint operations use the correct tool.
+
+Test link traversal commands (used by query and lint):
+
+```bash
+obsidian backlinks file="Test Entity"
+obsidian links file="Test Entity"
+```
+
+Run these against the test page created earlier (before cleanup). Verify that `backlinks` returns files linking to the test page and `links` returns outgoing links from it. If the `file=` parameter doesn't resolve Title Case names with spaces, try `path=` instead. Document the working syntax in CLAUDE.md.
+
 ### 1.5 Write CLAUDE.md
 
 Create `CLAUDE.md` in the vault root as specified in the proposal. Two sections: Specifications (strict data contracts) and Guidance (flexible principles). Include empty "Wiki Conventions" section.
@@ -336,14 +353,14 @@ Linear, but only 5 phases instead of 9. First real content appears in Phase 2 (s
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | `obsidian create ... template=` doesn't work as expected | Medium | Medium | Test in Phase 1.4. Fallback: read template, create page with content directly. |
-| `obsidian search ... path=wiki` doesn't filter by path | Medium | Low | Test in Phase 1.4. Fallback: `folder=wiki` parameter or grep. |
 | Obsidian desktop app not running when CLI commands execute | Low | Medium | Only affects search/graph commands. Document clearly. Direct file I/O works without the app. |
 | LLM creates duplicate pages instead of updating existing ones | Medium | Medium | CLAUDE.md specifies "search before creating." Review in Phase 2. Add correction if needed. |
 | LLM marks inferences as `[!source]` | Medium | High | CLAUDE.md emphasizes this distinction. Review claim typing in Phase 2. Correct aggressively. |
 | Context compaction drops CLAUDE.md conventions mid-session | Medium | High | Keep CLAUDE.md concise. For long sessions, the agent can re-read it. |
 | Lint graph commands (`obsidian orphans/deadends/unresolved`) don't work as expected | Medium | Medium | Test in Phase 1.4. Fallback: agent reads file tree and parses wikilinks manually. More expensive but no CLI dependency. |
 | LLM writes substantive claims as regular prose (no callout) | High | High | CLAUDE.md claim typing spec emphasizes this. Review in Phase 2. If it happens, add an explicit correction to Wiki Conventions: "Every factual or analytical statement must be inside a typed callout." |
-| `obsidian search` has no directory scoping parameter | Medium | Low | Test in Phase 1.4. Fallback: search full vault and filter by path prefix, or use grep. Document in CLAUDE.md. |
+| `obsidian search path=` doesn't filter results as documented | Low | Low | CLI reference documents `path=<folder>` for search. Test in Phase 1.4 to confirm behavior matches docs. Fallback: filter by path prefix, or use grep. |
+| Callout syntax (`[!source]`, `[!gap]`) not searchable via `obsidian search` | Medium | Medium | Test in Phase 1.4. Fallback: grep or direct file scanning. Document in CLAUDE.md. |
 
 ---
 

@@ -42,7 +42,11 @@ Analysis and implementation planning for an LLM-maintained personal knowledge wi
 ### Revision history
 
 - **`revisions/`** — Records of design revisions with rationale.
-  - `revisions-1.md` — First revision round. Key changes: specifications/guidance split in CLAUDE.md, log.md restored, synthesis.md given operational workflow, shell scripts removed from V1, Obsidian CLI exclusivity relaxed, generative lint added, plan condensed from 9 phases to 5, token budget removed.
+  - `revisions-1.md` — Round 1. Specifications/guidance split, log.md and synthesis.md restored, shell scripts removed, plan condensed from 9 to 5 phases, Obsidian CLI exclusivity relaxed.
+  - `revisions-2.md` — Round 2. Frontmatter compliance, claim typing for synthesis, index split threshold, dual output convention, ingestion gap acknowledged.
+  - `revisions-3.md` — Round 3. Page naming convention, lint CLI tests, source granularity guidance, bare-claims risk, page length guidance, log format H3.
+  - `revisions-4.md` — Round 4. Training period formalized, search scoping test, index entry conciseness, image handling, ingestion gap threshold strengthened. Includes philosophy check that withdrew two candidate changes.
+  - `revisions-5.md` — Round 5. Callout search test, link traversal test, risk register corrections, documentation fixes.
 
 ## Reading order
 
