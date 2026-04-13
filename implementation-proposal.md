@@ -471,8 +471,10 @@ ambiguous, disambiguate with a parenthetical: `Mercury (Planet).md`.
 ### Index Format
 
 `wiki/index.md`: one wikilink + one-line TLDR per page, organized by
-category (Entities, Concepts, Sources, Comparisons). Keep entries concise.
-When the index becomes unwieldy, split into per-category indexes.
+category (Entities, Concepts, Sources, Comparisons). Keep each entry
+under ~30 words. The index must remain small enough to read in full at
+the start of every query and ingest operation. When the index becomes
+unwieldy, split into per-category indexes.
 Rule of thumb: split when the index exceeds ~100 entries.
 
 ### Log Format
@@ -514,6 +516,23 @@ and log when done. Commit via git.
 For long sources (books, lengthy reports), ingest chapter by chapter or
 section by section. Each chunk gets its own source-summary page. This
 produces better extraction than ingesting a full document at once.
+
+For sources with images or diagrams: ensure attachments are stored in
+`raw/assets/`. Reference images in source-summary pages using standard
+Obsidian image embeds (`![[image.png]]`). When an image contains
+information relevant to the wiki (a diagram, chart, or table), describe
+its content in text nearby so the information is searchable and
+available to future queries.
+
+### Training Period
+
+For the first ~10 ingests, the human should review every created and
+updated page — not just spot-check. Corrections get filed to Wiki
+Conventions immediately. This is what bootstraps the schema flywheel:
+each correction makes the next ingest better, and the conventions
+accumulate domain-specific patterns that no upfront design can
+anticipate. As the Wiki Conventions section fills and corrections
+become rare, the human can shift to periodic review.
 
 ### Query
 

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-04-13 — Revision 4
+
+Training period, CLI verification, data contract tightening, and guidance additions based on full comparative review of all planning documents against source materials (`llm-wiki.md`, `PHILOSOPHY.md`, `intermediate/`, `synthesis/`, `obsidian-cli/`) and Rounds 1-3. Includes a philosophy check that withdrew two candidate changes. See `revisions/revisions-4.md` for full rationale.
+
+### Added
+
+- **Training period formalized.** For the first ~10 ingests, human reviews every created/updated page. Corrections filed to Wiki Conventions immediately. This bootstraps the schema flywheel. Added as a new `### Training Period` subsection in CLAUDE.md Guidance, a note in Plan Phase 2, and two checklist items. (`implementation-proposal.md`, `plan.md`, `plan-checklist.md`)
+- **Search directory scoping test.** Phase 1.4 now tests whether `obsidian search` supports `path=` or `folder=` filtering. Fallback: search full vault and filter by path prefix, or use grep. New risk register entry. (`plan.md`, `plan-checklist.md`)
+- **Image and attachment handling guidance.** Sources with images: store in `raw/assets/`, embed with `![[image.png]]`, describe content in text for searchability. Added to CLAUDE.md Ingest guidance. (`implementation-proposal.md`)
+- **Query output formats note.** Phase 3.1 now notes that diverse output formats (comparison tables, Marp slides, etc.) are supported but deferred for testing until basic query workflow is validated. (`plan.md`)
+
+### Changed
+
+- **Index entry conciseness specified.** "Keep entries concise" replaced with "Keep each entry under ~30 words. The index must remain small enough to read in full at the start of every query and ingest operation." Makes the ~100 entry split threshold from Round 2 actually work within context limits. (`implementation-proposal.md`, CLAUDE.md Index Format)
+- **Ingestion gap threshold strengthened.** Replaced vague "minimum coverage threshold" with concrete "8-10+ sources with overlapping topics." Treat wiki answers as starting points until then. (`plan.md`, Phase 4 note)
+
+### Withdrawn (Philosophy Check)
+
+- **Source hash tracking** — Rated Tier 1 by critical synthesis but adding it now violates Principle 6 ("Start simple, add infrastructure when earned"). Already correctly positioned in the scaling plan.
+- **Diff-before-commit promoted to Phase 2** — Mandating a procedural step on every write violates Principle 2 ("Agent as writer, not pipeline"). Already correctly positioned as a Phase 4.3 review question.
+
 ## 2026-04-13 — Revision 3
 
 Data contract completions, risk coverage, and guidance additions based on comparative review of all planning documents against source materials (`llm-wiki.md`, `PHILOSOPHY.md`, `intermediate/`, `synthesis/`). See `revisions/revisions-3.md` for full rationale.

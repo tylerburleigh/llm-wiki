@@ -136,6 +136,15 @@ obsidian unresolved
 
 If any don't work: the agent can compute these by reading the file tree and parsing wikilinks directly. Document which commands work and which need the manual fallback. This determines how CLAUDE.md references lint operations.
 
+Test search directory scoping:
+
+```bash
+obsidian search query=test path=wiki/entities
+obsidian search query=test folder=wiki/entities
+```
+
+If neither syntax filters results by directory, the fallback is: search the full vault and filter results by path prefix in the agent's output, or use grep directly. Document the working approach in CLAUDE.md so the agent doesn't re-discover it each session.
+
 ### 1.5 Write CLAUDE.md
 
 Create `CLAUDE.md` in the vault root as specified in the proposal. Two sections: Specifications (strict data contracts) and Guidance (flexible principles). Include empty "Wiki Conventions" section.
@@ -154,6 +163,8 @@ git commit -m "Initial vault setup: structure, templates, schema"
 ## Phase 2: First Ingest (Smoke Test)
 
 **Goal:** Ingest a real source end-to-end. This is the most important phase — it validates the entire system against real content and reveals what needs adjustment.
+
+**This is the start of the training period.** Review every page the agent creates or updates — not just the source summary. File corrections to Wiki Conventions immediately. Continue this level of review through Phase 4 (~10 ingests total). The conventions accumulated during this period are the schema's most valuable content.
 
 **Depends on:** Phase 1
 
@@ -228,6 +239,8 @@ Verify:
 - Dual output: wiki pages updated as side effect if applicable
 - Log entry appended if a new page was created
 
+**Future:** Query output formats (comparison tables, Marp slides, etc.) are supported but not tested in this phase. Exercise them once the basic query workflow is validated.
+
 ### 3.2 Lint Test
 
 ```
@@ -253,7 +266,7 @@ Same pattern as Phase 2.
 
 **Goal:** Stress-test with more sources. Build real cross-references. Refine the schema.
 
-**Note:** A partially-built wiki can underperform no wiki at all — incomplete cross-references and partial synthesis can mislead rather than help. The wiki's value compounds after a minimum coverage threshold. Treat the wiki as a work-in-progress until cross-references form a meaningful web and synthesis reflects multiple sources. This phase is where the wiki crosses that threshold.
+**Note:** A partially-built wiki can underperform no wiki at all — incomplete cross-references and partial synthesis can mislead rather than help. Until the wiki has 8-10+ sources with overlapping topics, treat wiki answers as starting points, not authoritative. Cross-references and synthesis only become reliable when multiple sources cover the same entities and concepts. This phase is where the wiki crosses that threshold.
 
 **Depends on:** Phases 2-3
 
@@ -330,6 +343,7 @@ Linear, but only 5 phases instead of 9. First real content appears in Phase 2 (s
 | Context compaction drops CLAUDE.md conventions mid-session | Medium | High | Keep CLAUDE.md concise. For long sessions, the agent can re-read it. |
 | Lint graph commands (`obsidian orphans/deadends/unresolved`) don't work as expected | Medium | Medium | Test in Phase 1.4. Fallback: agent reads file tree and parses wikilinks manually. More expensive but no CLI dependency. |
 | LLM writes substantive claims as regular prose (no callout) | High | High | CLAUDE.md claim typing spec emphasizes this. Review in Phase 2. If it happens, add an explicit correction to Wiki Conventions: "Every factual or analytical statement must be inside a typed callout." |
+| `obsidian search` has no directory scoping parameter | Medium | Low | Test in Phase 1.4. Fallback: search full vault and filter by path prefix, or use grep. Document in CLAUDE.md. |
 
 ---
 
