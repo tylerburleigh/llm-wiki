@@ -1,6 +1,17 @@
-# Proposal: LLM Wiki for Obsidian via Claude Code
+# Revisions (Round 1)
 
-A concrete implementation of the LLM Wiki pattern as a Claude Code skill backed by the Obsidian CLI and direct file I/O.
+Revised implementation proposal, plan, and checklist for the LLM Wiki. Changes are based on `suggestions.md` and follow-up discussion. See that file for rationale behind each change.
+
+Key themes of this revision:
+1. **Strict on data contracts, flexible on workflows.** Frontmatter schemas, callout syntax, directory layout, wikilink format, and log entry format are non-negotiable specifications that enable tooling. How the agent ingests, queries, and maintains the wiki is guided by principles, not step-by-step procedures.
+2. **Restore missing pieces from the original.** log.md, synthesis workflow, generative lint, diverse query output formats.
+3. **Simplify V1 infrastructure.** Drop shell scripts and hash-based provenance. The LLM performs these operations natively. Add automation later when concrete bottlenecks appear.
+4. **Get to first ingest faster.** Reorganize the plan so real content is created early, not after four phases of setup.
+5. **Relax CLI exclusivity.** Use Obsidian CLI for search and graph operations. Use direct file I/O for reads and writes.
+
+---
+
+# Part 1: Revised Implementation Proposal
 
 ---
 
@@ -537,7 +548,7 @@ The `obsidian search` commands provide full-text search. The index file serves a
 
 At small scale, the LLM can check for staleness by comparing source modification dates to page `updated` dates during lint. At larger scale:
 
-1. **Hash-based staleness.** Add a script that computes SHA-256 hashes for source files and compares against stored references.
+1. **Hash-based staleness.** Add a script that computes SHA-256 hashes for source files and compares against stored references. This is the hash-sources.sh / check-stale.sh approach from the original proposal — deferred to when it's needed.
 2. **Lazy recompilation.** Don't recompile all stale pages at once. Recompile each the next time it's accessed by a query.
 3. **Diff-based ingest.** When a source is updated (not new), diff it to identify what changed. Update only affected wiki pages.
 
@@ -574,3 +585,450 @@ At small scale, the LLM can check for staleness by comparing source modification
 | `wiki/synthesis.md` | Evolving high-level synthesis (scaffold) |
 
 Total: 1 skill file, 4 templates, 3 wiki scaffolds. No external dependencies beyond Obsidian, git, and standard Unix tools.
+
+---
+---
+
+# Part 2: Revised Plan
+
+---
+
+## Phase 0: Prerequisites & Environment
+
+**Goal:** Confirm the toolchain works before writing anything.
+
+### 0.1 Verify Obsidian CLI
+
+Obsidian 1.12.7+ required. CLI enabled in Settings > General > Command line interface.
+
+```bash
+obsidian version
+```
+
+### 0.2 Verify Git
+
+```bash
+git --version
+```
+
+### 0.3 Choose or Create the Vault
+
+Use an existing vault or create a new one via Obsidian's UI. The vault must be open in the Obsidian desktop app for CLI search/graph commands.
+
+### 0.4 Configure Obsidian Settings
+
+- **Settings > Files and links > Default location for new notes:** `wiki/`
+- **Settings > Files and links > Attachment folder path:** `raw/assets/`
+- **Settings > Templates > Template folder location:** `templates/`
+- **Settings > Core plugins:** Enable Templates
+
+### 0.5 Initialize Git
+
+```bash
+cd /path/to/vault
+git init
+```
+
+Create `.gitignore`:
+```
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.trash/
+```
+
+```bash
+git add .gitignore
+git commit -m "Initialize vault"
+```
+
+---
+
+## Phase 1: Minimal Setup
+
+**Goal:** Create the directory structure, templates, wiki scaffolds, and a minimal CLAUDE.md. Everything needed to do a first ingest.
+
+**Depends on:** Phase 0
+
+### 1.1 Create Directories
+
+```bash
+mkdir -p raw/assets
+mkdir -p wiki/entities wiki/concepts wiki/sources wiki/comparisons
+mkdir -p templates
+```
+
+### 1.2 Create Wiki Scaffolds
+
+**`wiki/index.md`:**
+```markdown
+# Wiki Index
+
+## Entities
+
+## Concepts
+
+## Sources
+
+## Comparisons
+```
+
+**`wiki/log.md`:**
+```markdown
+# Wiki Log
+```
+
+**`wiki/synthesis.md`:**
+```markdown
+---
+type: synthesis
+updated: ""
+status: current
+---
+
+> [!tldr]
+> High-level synthesis of the wiki's knowledge. Updated as the wiki grows.
+
+## Overview
+
+*No content yet. Updated after the first few sources are ingested.*
+```
+
+### 1.3 Write Templates
+
+Create all four templates (entity, concept, source-summary, comparison) as specified in the proposal. These define the required frontmatter fields, TLDR callout, claim-typed sections, and default structure for each page type.
+
+### 1.4 Test Template Creation via CLI
+
+Verify that the Obsidian CLI can create pages from templates:
+
+```bash
+obsidian create name="Test Entity" path=wiki/entities template=entity
+obsidian read path="wiki/entities/Test Entity.md"
+```
+
+Verify: page created in correct directory, frontmatter intact, `{{date}}` resolved.
+
+If `template=` doesn't work: document the working alternative (e.g., read template content, create page with content directly). This determines how CLAUDE.md references template usage.
+
+Clean up test page.
+
+### 1.5 Write CLAUDE.md
+
+Create `CLAUDE.md` in the vault root as specified in the proposal. Two sections: Specifications (strict data contracts) and Guidance (flexible principles). Include empty "Wiki Conventions" section.
+
+Adjust any CLI commands based on findings from 1.4.
+
+### 1.6 Commit
+
+```bash
+git add -A
+git commit -m "Initial vault setup: structure, templates, schema"
+```
+
+---
+
+## Phase 2: First Ingest (Smoke Test)
+
+**Goal:** Ingest a real source end-to-end. This is the most important phase — it validates the entire system against real content and reveals what needs adjustment.
+
+**Depends on:** Phase 1
+
+### 2.1 Add a Source
+
+Choose a real source document — a short article or paper. Copy or clip it into `raw/`.
+
+### 2.2 Run Ingest
+
+Open a Claude Code session in the vault directory. CLAUDE.md loads automatically.
+
+```
+Ingest the source at raw/<filename>.md
+```
+
+### 2.3 Verify Results
+
+**Source summary:**
+- Created in `wiki/sources/`?
+- Frontmatter populated (raw_path, sources, created date, tags)?
+- TLDR present and accurate?
+- Key takeaways use `[!source]` callouts with wikilinks?
+
+**Entity and concept pages:**
+- Created in correct directories?
+- No duplicates (agent searched before creating)?
+- Frontmatter includes source reference?
+- Claims properly typed (source vs. analysis)?
+
+**Index:** Updated with new pages and TLDRs?
+
+**Log:** Entry appended to `wiki/log.md`?
+
+**Synthesis:** `wiki/synthesis.md` updated?
+
+**Claim typing:** No bare claims outside callout blocks? Source callouts include links? Analysis callouts show reasoning?
+
+### 2.4 Record Issues
+
+Problems found become the first entries in the CLAUDE.md "Wiki Conventions" section. CLI command adjustments go into the Specifications section.
+
+### 2.5 Commit
+
+```bash
+git add -A
+git commit -m "First ingest: <source-name>"
+```
+
+---
+
+## Phase 3: Query and Lint Smoke Tests
+
+**Goal:** Validate the remaining two operations.
+
+**Depends on:** Phase 2
+
+### 3.1 Query Test
+
+Ask a question that requires reading multiple wiki pages:
+
+```
+What are the main themes in the wiki so far?
+```
+
+Verify:
+- Index consulted, search used, relevant pages read
+- Links followed (backlinks/outgoing)
+- Answer cites specific wiki pages
+- Sourced claims distinguished from inferences
+- Dual output: wiki pages updated as side effect if applicable
+- Log entry appended if a new page was created
+
+### 3.2 Lint Test
+
+```
+Run a lint check on the wiki.
+```
+
+Verify:
+- Structural checks ran (orphans, dead ends, unresolved links)
+- Unverified claims and gaps scanned
+- Index consistency checked
+- Conceptual review performed (suggested investigations, not just structural findings)
+- Report presented with categories and recommended actions
+- No fixes applied without approval
+- Log entry appended
+
+### 3.3 Record Issues and Commit
+
+---
+
+## Phase 4: Iteration & Refinement
+
+**Goal:** Stress-test with more sources. Build real cross-references. Refine the schema.
+
+**Depends on:** Phases 2-3
+
+### 4.1 Ingest 3-5 More Sources
+
+Choose sources that overlap (shared entities/concepts) to test cross-referencing. Include at least one source that contradicts or updates a claim from an earlier source.
+
+After each ingest, review:
+- Cross-references created correctly?
+- Existing pages updated (not duplicated)?
+- Contradictions surfaced (not smoothed)?
+- Index staying clean?
+- Synthesis evolving meaningfully?
+- Log accumulating?
+
+### 4.2 Test Source Update (Staleness)
+
+Modify one raw source. Tell the agent to re-ingest the updated source. Verify:
+- Affected wiki pages updated
+- Frontmatter `updated` dates refreshed
+- Contradictions from the update surfaced
+
+### 4.3 Review and Evolve the Schema
+
+By this point the "Wiki Conventions" section in CLAUDE.md should have several entries. Review them:
+- Are the corrections specific and useful?
+- Has the agent learned patterns about the domain?
+- Do the templates need adjustment for this domain?
+- Is a new page type needed?
+
+Adjust CLAUDE.md, templates, or conventions as needed. This is the schema co-evolution the original describes.
+
+### 4.4 Commit
+
+```bash
+git add -A
+git commit -m "Complete initial wiki buildout (<N> sources, <M> wiki pages)"
+```
+
+---
+
+## Dependency Graph
+
+```
+Phase 0 (Prerequisites)
+  |
+  v
+Phase 1 (Minimal Setup: dirs, templates, CLAUDE.md, scaffolds)
+  |
+  v
+Phase 2 (First Ingest — smoke test)
+  |
+  v
+Phase 3 (Query + Lint — smoke tests)
+  |
+  v
+Phase 4 (Iteration & Refinement)
+```
+
+Linear, but only 5 phases instead of 9. First real content appears in Phase 2 (second phase of actual work).
+
+---
+
+## Risk Register
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| `obsidian create ... template=` doesn't work as expected | Medium | Medium | Test in Phase 1.4. Fallback: read template, create page with content directly. |
+| `obsidian search ... path=wiki` doesn't filter by path | Medium | Low | Test in Phase 1.4. Fallback: `folder=wiki` parameter or grep. |
+| Obsidian desktop app not running when CLI commands execute | Low | Medium | Only affects search/graph commands. Document clearly. Direct file I/O works without the app. |
+| LLM creates duplicate pages instead of updating existing ones | Medium | Medium | CLAUDE.md specifies "search before creating." Review in Phase 2. Add correction if needed. |
+| LLM marks inferences as `[!source]` | Medium | High | CLAUDE.md emphasizes this distinction. Review claim typing in Phase 2. Correct aggressively. |
+| Context compaction drops CLAUDE.md conventions mid-session | Medium | High | Keep CLAUDE.md concise. For long sessions, the agent can re-read it. |
+
+---
+
+## Success Criteria
+
+The implementation is complete when:
+
+1. All 8 deliverable files exist and are committed to git
+2. A source has been ingested end-to-end with correct claim typing and provenance
+3. A query has been answered using wiki content with proper citations
+4. A lint pass has run all checks (structural + conceptual) and produced a report
+5. The wiki has 4+ sources ingested with cross-referenced entity and concept pages
+6. `wiki/log.md` has entries for ingests, queries, and lint
+7. `wiki/synthesis.md` has been updated across multiple ingests
+8. CLAUDE.md "Wiki Conventions" section has entries from real use
+
+---
+---
+
+# Part 3: Revised Checklist
+
+---
+
+## Phase 0: Prerequisites & Environment
+
+- [ ] **0.1** Obsidian 1.12.7+ installed, CLI enabled, `obsidian version` works
+- [ ] **0.2** `git --version` works
+- [ ] **0.3** Vault created or chosen, open in Obsidian desktop app
+- [ ] **0.4** Obsidian settings configured:
+  - [ ] Default note location -> `wiki/`
+  - [ ] Attachment folder -> `raw/assets/`
+  - [ ] Template folder -> `templates/`
+  - [ ] Templates core plugin enabled
+- [ ] **0.5** Git initialized with `.gitignore`
+
+---
+
+## Phase 1: Minimal Setup
+
+- [ ] **1.1** Directories created: `raw/assets/`, `wiki/entities/`, `wiki/concepts/`, `wiki/sources/`, `wiki/comparisons/`, `templates/`
+- [ ] **1.2** Wiki scaffolds created:
+  - [ ] `wiki/index.md` (category headers)
+  - [ ] `wiki/log.md` (empty scaffold)
+  - [ ] `wiki/synthesis.md` (frontmatter + TLDR + placeholder)
+- [ ] **1.3** Templates written:
+  - [ ] `templates/entity.md`
+  - [ ] `templates/concept.md`
+  - [ ] `templates/source-summary.md`
+  - [ ] `templates/comparison.md`
+- [ ] **1.4** CLI template creation tested:
+  - [ ] `obsidian create ... template=entity` works (or fallback documented)
+  - [ ] Frontmatter intact, `{{date}}` resolved
+  - [ ] Test page cleaned up
+- [ ] **1.5** `CLAUDE.md` written:
+  - [ ] Specifications section (vault layout, frontmatter, TLDR, claim typing, cross-refs, index format, log format, conventions)
+  - [ ] Guidance section (ingest, query, lint, synthesis)
+  - [ ] Wiki Conventions section (empty)
+  - [ ] CLI commands adjusted based on 1.4 findings
+- [ ] **1.6** Committed to git
+
+---
+
+## Phase 2: First Ingest
+
+- [ ] **2.1** Real source added to `raw/`
+- [ ] **2.2** Ingest run via Claude Code
+- [ ] **2.3** Results verified:
+  - [ ] Source summary page in `wiki/sources/` with correct frontmatter and TLDR
+  - [ ] Entity pages in `wiki/entities/` (no duplicates)
+  - [ ] Concept pages in `wiki/concepts/` (no duplicates)
+  - [ ] All claims properly typed (source callouts have links, analysis shows reasoning)
+  - [ ] `wiki/index.md` updated
+  - [ ] `wiki/log.md` entry appended
+  - [ ] `wiki/synthesis.md` updated
+- [ ] **2.4** Issues recorded in CLAUDE.md Wiki Conventions
+- [ ] **2.5** Committed to git
+
+---
+
+## Phase 3: Query & Lint Smoke Tests
+
+- [ ] **3.1** Query tested:
+  - [ ] Index consulted, search used, pages read, links followed
+  - [ ] Answer cites specific wiki pages
+  - [ ] Sourced claims distinguished from inferences
+  - [ ] Dual output (wiki updates as side effect, if applicable)
+- [ ] **3.2** Lint tested:
+  - [ ] Orphans, dead ends, unresolved links checked
+  - [ ] Unverified claims and gaps scanned
+  - [ ] Index consistency checked
+  - [ ] Conceptual review performed (suggested investigations)
+  - [ ] Report presented, no fixes without approval
+- [ ] **3.3** Issues recorded, committed to git
+
+---
+
+## Phase 4: Iteration & Refinement
+
+- [ ] **4.1** Additional sources ingested (target: 3-5):
+  - [ ] Source 2 ingested and reviewed
+  - [ ] Source 3 ingested and reviewed
+  - [ ] Source 4 ingested and reviewed
+  - [ ] Cross-references correct, existing pages updated not duplicated
+  - [ ] Contradictions surfaced
+  - [ ] Index clean, log accumulating, synthesis evolving
+- [ ] **4.2** Source update tested:
+  - [ ] Raw source modified
+  - [ ] Re-ingest updates affected pages
+  - [ ] Updated dates refreshed
+- [ ] **4.3** Schema reviewed and evolved:
+  - [ ] Wiki Conventions has entries from real use
+  - [ ] Templates assessed for domain fitness
+  - [ ] New page type added if needed
+- [ ] **4.4** Committed to git
+
+---
+
+## Completion Criteria
+
+- [ ] All 8 deliverables committed:
+  - [ ] `CLAUDE.md`
+  - [ ] `templates/entity.md`
+  - [ ] `templates/concept.md`
+  - [ ] `templates/source-summary.md`
+  - [ ] `templates/comparison.md`
+  - [ ] `wiki/index.md`
+  - [ ] `wiki/log.md`
+  - [ ] `wiki/synthesis.md`
+- [ ] End-to-end ingest with correct claim typing and provenance
+- [ ] Query with citations and dual output
+- [ ] Lint with structural + conceptual checks
+- [ ] 4+ sources ingested with cross-referenced pages
+- [ ] Log has entries for ingests, queries, and lint
+- [ ] Synthesis updated across multiple ingests
+- [ ] CLAUDE.md Wiki Conventions has entries from real use

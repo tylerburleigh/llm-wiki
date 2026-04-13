@@ -27,16 +27,27 @@ Analysis and implementation planning for an LLM-maintained personal knowledge wi
   - `04_intermediate_synthesis.md` — Consolidates questions, implementations, and discussion into a single document organized around the core pattern. Identifies gaps, opportunities, and concrete solutions for each theme (epistemic integrity, provenance, scaling, structure, human role, multi-agent, conceptual extensions).
   - `05_critical_synthesis.md` — Critical assessment of every proposed idea for plausibility, feasibility, effectiveness, and complexity. Identifies 6 core challenges ranked by severity, evaluates solutions in 3 tiers (implement first / implement when needed / defer or skip), and surfaces 3 underappreciated findings. Ends with a 4-phase priority stack.
 
+### Design philosophy
+
+- **`PHILOSOPHY.md`** — The principles behind the LLM Wiki design. Covers: compilation over retrieval, agent as writer (not pipeline), strict data contracts with flexible workflows, epistemic integrity via claim typing, human-as-editor-in-chief, schema co-evolution, and compounding value.
+
 ### Implementation
 
-- **`implementation-proposal.md`** — Concrete proposal for implementing the LLM Wiki as a Claude Code skill backed by the Obsidian CLI and shell scripts. Specifies: vault structure, 4 page templates with claim typing (Source/Analysis/Unverified/Gap), 3 supporting scripts (hash-sources, check-stale, build-index), the full CLAUDE.md skill file, and a scaling plan. Includes an explicit exclusion list of ideas deemed overengineered.
+- **`implementation-proposal.md`** — Concrete proposal for implementing the LLM Wiki as a Claude Code skill backed by the Obsidian CLI (for search/graph) and direct file I/O (for reads/writes). Specifies: vault structure, 4 page templates with claim typing (Source/Analysis/Unverified/Gap), the full CLAUDE.md skill file with specifications/guidance split, and a scaling plan. Operations (ingest, query, lint) are described by goals and principles — the agent exercises judgment, not a fixed procedure. Deliverables: 1 skill file, 4 templates, 3 wiki scaffolds (index, log, synthesis).
 
-- **`plan.md`** — Detailed implementation plan in 8 phases: prerequisites, directory structure, templates, scripts, skill file, and 3 smoke tests (ingest, query, lint) followed by iteration. Includes a dependency graph, risk register, and success criteria.
+- **`plan.md`** — Implementation plan in 5 phases: prerequisites, minimal setup, first ingest smoke test, query/lint smoke tests, and iteration with schema refinement. First real content appears in Phase 2. Includes a risk register and success criteria.
 
-- **`plan-checklist.md`** — Trackable checklist version of the plan. 72 checkbox items organized by phase, with granular verification steps for each deliverable.
+- **`plan-checklist.md`** — Trackable checklist version of the plan. Organized by phase, with verification steps for each deliverable.
+
+### Revision history
+
+- **`revisions/`** — Records of design revisions with rationale.
+  - `revisions-1.md` — First revision round. Key changes: specifications/guidance split in CLAUDE.md, log.md restored, synthesis.md given operational workflow, shell scripts removed from V1, Obsidian CLI exclusivity relaxed, generative lint added, plan condensed from 9 phases to 5, token budget removed.
 
 ## Reading order
 
 For understanding the analysis: `llm-wiki.md` -> `intermediate/` (01, 02, 03) -> `synthesis/` (04, 05)
+
+For understanding the design: `PHILOSOPHY.md` -> `implementation-proposal.md`
 
 For building the wiki: `implementation-proposal.md` -> `plan.md` -> `plan-checklist.md`
