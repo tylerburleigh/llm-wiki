@@ -116,12 +116,12 @@ Scaffold validation only — throwaway content used to exercise remaining scaffo
   - [x] Contradictions surfaced (not smoothed) — Wood 2021 ingest surfaced the CTB 0.12 vs Williamson 0.15 SMD disagreement in [[Standardized Mean Score Difference]] and [[Williamson 2012 vs Wood 2021 - Automated Scoring Standards]]; Phase 3.1 query confirmed it remains unresolved rather than collapsed
   - [x] Index clean, log accumulating, synthesis evolving
   - [x] Auditor catches gaps/attribution errors on each ingest
-- [ ] **4.2** Source update tested:
-  - [ ] Raw source modified
-  - [ ] Agent detects change via `raw_hash` comparison
-  - [ ] Re-ingest updates affected pages
-  - [ ] Updated dates refreshed
-  - [ ] Unchanged source re-ingest correctly skipped (hash match)
+- [x] **4.2** Source update tested (three-cycle test using a small synthetic markdown source, `raw/test-note-human-rater-reliability.md`):
+  - [x] Raw source modified (threshold revised 0.65 → 0.70)
+  - [x] Agent detects change via `raw_hash` comparison (stored `79fb8de1…` → new `1393255f…` flagged as mismatch; skill asked whether to refresh or treat as new)
+  - [x] Re-ingest updates affected pages (source-summary, 1 concept, 2 inline-citing concepts, index, log, synthesis all refreshed in place; internal inconsistency surfaced as `[!gap]`; Williamson tension reframed hypothetical → direct)
+  - [x] Updated dates refreshed (raw_hash updated; `updated` dates already on 2026-04-18 from the same-day cycles)
+  - [x] Unchanged source re-ingest correctly skipped (hash match) — skill auto-routed to audit-only mode, replaced (not stacked) the prior audit callout; auditor surfaced the 2-page audit-scope design issue (filed as Wiki Convention)
 - [ ] **4.3** Schema reviewed and evolved:
   - [ ] Wiki Conventions has entries from real use
   - [ ] Templates assessed for domain fitness
@@ -154,7 +154,7 @@ The scaffold is complete when the items below are checked. A real wiki built on 
 - [x] Query with citations and dual output
 - [x] Lint with structural + conceptual checks (produces report; applies no fixes without approval)
 - [ ] Cross-reference and contradiction behaviors exercised across at least 2 overlapping throwaway ingests (1 overlapping ingest done; cross-ref + contradiction surfacing exercised, but 2nd overlap still pending)
-- [ ] Source-update (hash drift) and hash-match audit-only paths both exercised
+- [x] Source-update (hash drift) and hash-match audit-only paths both exercised (Phase 4.2 three-cycle test)
 - [x] Log has entries for ingests, queries, and lint
-- [ ] Synthesis updated across multiple ingests (2 ingests integrated; Phase 3 query did not warrant synthesis revision)
+- [x] Synthesis updated across multiple ingests (3 ingests integrated; revised in Phase 4.2 cycle 3 to reflect the 0.65 → 0.70 revision and the two-role ambiguity)
 - [x] CLAUDE.md Wiki Conventions has entries from real use

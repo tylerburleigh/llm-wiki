@@ -346,3 +346,36 @@ sources:
 
 Not bare-bracket form (`sources: [[[A]]]`), which parses ambiguously.
 Empty lists stay flow (`sources: []`) — that matches the templates.
+
+### Any callout citing a source adds it to frontmatter sources
+
+Extraction MUST add a source to a page's `sources:` frontmatter list
+whenever the page cites the source in *any* typed callout, including
+`[!analysis]` that only references the source as an adjacent
+comparison point. Otherwise `/wiki-ingest --audit-only` re-runs (which
+route pages by frontmatter `sources:`) will not cover those pages,
+and scope-drift on inline citations can persist indefinitely across
+re-audits. Rule of thumb: if the page wikilinks `[[Source Summary]]`
+anywhere in the body, it belongs in `sources:`.
+
+### Anonymous or undated sources: Anonymous <ingest-year> - <topic>
+
+When a source lacks author, venue, and date, file it as
+`Anonymous <ingest-year> - <short topic>.md` using the ingest year as
+a placeholder. Frontmatter `raw_path` points to the file; a
+`[!gap]` under a `## Provenance` section records what is missing
+(author, venue, date). An `[!analysis]` treating claims as
+low-authority belongs directly under Provenance, and a
+`low-authority` tag in frontmatter propagates the caveat to lint
+passes.
+
+### Refresh promotes preserved gaps in the edit path
+
+When a hash-drift refresh rewrites a block the prior audit flagged as
+scope-drift or attribution-mismatch, the refresh MUST fix those
+findings as part of the rewrite. The skill's "don't fix gaps inline"
+rule does not apply to blocks already in the edit path — if the
+extractor is rewriting a callout anyway, that is the right moment to
+restore a missing scope qualifier or split a stitched quote. A prior
+gap that is "passively preserved" becomes a fresh extraction choice
+once the block is rewritten without addressing it.
