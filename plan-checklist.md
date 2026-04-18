@@ -110,12 +110,12 @@ Smoke-tested against Williamson, Xi, & Breyer 2012 on the `smoke-test` branch. C
 Scaffold validation only — throwaway content used to exercise remaining scaffold behaviors. Building a real wiki is a downstream project.
 
 - [ ] **4.1** Cross-reference and contradiction patterns exercised (2-3 throwaway ingests):
-  - [ ] Ingest 2 (overlapping entities/concepts with Phase 2 source)
+  - [x] Ingest 2 (overlapping entities/concepts with Phase 2 source) — Wood et al. 2021 on `smoke-test` branch
   - [ ] Ingest 3 (contradicts a prior claim)
-  - [ ] Cross-references correct, existing pages updated not duplicated
+  - [x] Cross-references correct, existing pages updated not duplicated
   - [ ] Contradictions surfaced (not smoothed)
-  - [ ] Index clean, log accumulating, synthesis evolving
-  - [ ] Auditor catches gaps/attribution errors on each ingest
+  - [x] Index clean, log accumulating, synthesis evolving
+  - [x] Auditor catches gaps/attribution errors on each ingest
 - [ ] **4.2** Source update tested:
   - [ ] Raw source modified
   - [ ] Agent detects change via `raw_hash` comparison
