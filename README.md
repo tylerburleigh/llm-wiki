@@ -37,7 +37,9 @@ This aligns with the design philosophy: start with what markdown and existing to
 
 ### Source material
 
-- **`wiki-tool/`** — Scaffolding for a new wiki: an empty Obsidian vault skeleton (`CLAUDE.md` schema, templates, empty `index.md`/`log.md`/`synthesis.md`) plus the `/wiki-ingest` Claude Code skill and its `wiki-extractor` + `wiki-auditor` subagents. This is the headline deliverable — copy or clone it to start a new wiki, then point `/wiki-ingest` at your sources.
+- **`wiki-tool/`** — Scaffolding for a new wiki: an empty Obsidian vault skeleton (`CLAUDE.md` schema, templates, empty `index.md`/`log.md`/`synthesis.md`) plus the `/wiki-ingest` Claude Code skill and its `wiki-extractor` + `wiki-auditor` subagents. This is the headline deliverable — use `scripts/new-wiki.sh` (below) to spawn a fresh wiki from it.
+
+- **`scripts/new-wiki.sh`** — Spawns a new wiki from `wiki-tool/` into a target directory. Creates the expected subdirectories (entities, concepts, sources, comparisons, raw/assets) with `.gitkeep` files. Pass `--git` to initialize a fresh git repo for the new wiki, `--force` to overwrite an existing target.
 
 - **`PHILOSOPHY.md`** — The principles behind the LLM Wiki design. Covers: compilation over retrieval, agent as writer (not pipeline), strict data contracts with flexible workflows, epistemic integrity via claim typing, human-as-editor-in-chief, schema co-evolution, and compounding value.
 
