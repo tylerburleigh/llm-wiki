@@ -101,7 +101,7 @@ Smoke-tested against Williamson, Xi, & Breyer 2012 on the `smoke-test` branch. C
   - [x] Conceptual review produced specific findings (23 thinly-sourced, 8 bio-stub pages without `[!analysis]` — both expected at 2-source stage; no stale hubs)
   - [x] Report presented, no fixes without approval
   - [x] Log entry appended with audited claim references
-- [ ] **3.3** Issues recorded, committed to git
+- [x] **3.3** Issues recorded, committed to git (smoke-test content → `smoke-test` branch `14419eb`; checklist ticks → `main` `970bb3a`)
 
 ---
 
