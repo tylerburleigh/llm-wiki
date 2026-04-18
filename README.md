@@ -37,7 +37,7 @@ This aligns with the design philosophy: start with what markdown and existing to
 
 ### Source material
 
-- **`wiki-tool/`** — The wiki itself: Obsidian vault, `CLAUDE.md` schema, templates, and the `/wiki-ingest` Claude Code skill (with `wiki-extractor` and `wiki-auditor` subagents). This is the headline deliverable — start here to use or extend the tool.
+- **`wiki-tool/`** — Scaffolding for a new wiki: an empty Obsidian vault skeleton (`CLAUDE.md` schema, templates, empty `index.md`/`log.md`/`synthesis.md`) plus the `/wiki-ingest` Claude Code skill and its `wiki-extractor` + `wiki-auditor` subagents. This is the headline deliverable — copy or clone it to start a new wiki, then point `/wiki-ingest` at your sources.
 
 - **`PHILOSOPHY.md`** — The principles behind the LLM Wiki design. Covers: compilation over retrieval, agent as writer (not pipeline), strict data contracts with flexible workflows, epistemic integrity via claim typing, human-as-editor-in-chief, schema co-evolution, and compounding value.
 
