@@ -81,26 +81,26 @@ Smoke-tested against Williamson, Xi, & Breyer 2012 on the `smoke-test` branch. C
 
 ## Phase 3: Query & Lint Smoke Tests
 
-- [ ] **3.1** Query tested:
-  - [ ] Index consulted, search used, pages read, links followed
-  - [ ] Answer cites specific wiki pages
-  - [ ] Sourced claims distinguished from inferences
-  - [ ] Dual output (wiki updates as side effect, if applicable)
-  - [ ] Log entry appended if a new page was created
-- [ ] **3.2** Lint tested:
-  - [ ] Orphans, dead ends, unresolved links checked
-  - [ ] Schema checks ran:
-    - [ ] Frontmatter completeness per type (core + per-type fields; ISO 8601 dates; `sources`/`tags`/`subjects` as YAML lists)
-    - [ ] TLDR is the first content block after frontmatter on every page
-    - [ ] Filenames in Title Case, match wikilink text
-    - [ ] Index consistency (every page has an entry; every entry resolves; source counts match; TLDRs match)
-  - [ ] Source drift check ran (recomputed `raw_hash` for each source-summary, flagged mismatches)
-  - [ ] Bare-claim heuristic ran (prose claims outside typed callouts reported as candidates; `synthesis.md` exempt)
-  - [ ] Unverified claims and gaps scanned
-  - [ ] Claim-audit sampling ran (2-3 `[!source]` claims verified against cited sources; rotation honored)
-  - [ ] Conceptual review produced specific findings (not generic suggestions)
-  - [ ] Report presented, no fixes without approval
-  - [ ] Log entry appended with audited claim references
+- [x] **3.1** Query tested (accuracy-thresholds / source-disagreement question; `smoke-test` branch):
+  - [x] Index consulted, search used, pages read, links followed
+  - [x] Answer cites specific wiki pages
+  - [x] Sourced claims distinguished from inferences
+  - [x] Dual output (log entry appended; no new page — existing comparison covers the question)
+  - [x] Log entry appended (query side effect; no new page was warranted)
+- [x] **3.2** Lint tested:
+  - [x] Orphans, dead ends, unresolved links checked (no wiki orphans/dead-ends; no unresolved)
+  - [x] Schema checks ran:
+    - [x] Frontmatter completeness per type (35 pages; all required fields present; ISO dates; YAML block lists)
+    - [x] TLDR is the first content block after frontmatter on every page
+    - [x] Filenames in Title Case, match wikilink text (`e-rater` brand-name exception documented)
+    - [x] Index consistency (34/34 pages; counts match `len(sources)`; TLDR keyword overlap ≥ 2)
+  - [x] Source drift check ran (both `raw_hash` values OK against `raw/williamson2012.pdf` and Wood PDF)
+  - [x] Bare-claim heuristic ran (1 candidate found at `Human-Automated Score Agreement.md:21`, wrapped as `[!analysis]` with approval)
+  - [x] Unverified claims and gaps scanned (~70 `[!gap]` callouts, most pointing at future-ingest targets)
+  - [x] Claim-audit sampling ran (3 of 201 `[!source]` claims verified; seed `phase3-lint-sample-1`; references logged for rotation)
+  - [x] Conceptual review produced specific findings (23 thinly-sourced, 8 bio-stub pages without `[!analysis]` — both expected at 2-source stage; no stale hubs)
+  - [x] Report presented, no fixes without approval
+  - [x] Log entry appended with audited claim references
 - [ ] **3.3** Issues recorded, committed to git
 
 ---
@@ -113,7 +113,7 @@ Scaffold validation only — throwaway content used to exercise remaining scaffo
   - [x] Ingest 2 (overlapping entities/concepts with Phase 2 source) — Wood et al. 2021 on `smoke-test` branch
   - [ ] Ingest 3 (contradicts a prior claim)
   - [x] Cross-references correct, existing pages updated not duplicated
-  - [ ] Contradictions surfaced (not smoothed)
+  - [x] Contradictions surfaced (not smoothed) — Wood 2021 ingest surfaced the CTB 0.12 vs Williamson 0.15 SMD disagreement in [[Standardized Mean Score Difference]] and [[Williamson 2012 vs Wood 2021 - Automated Scoring Standards]]; Phase 3.1 query confirmed it remains unresolved rather than collapsed
   - [x] Index clean, log accumulating, synthesis evolving
   - [x] Auditor catches gaps/attribution errors on each ingest
 - [ ] **4.2** Source update tested:
@@ -151,10 +151,10 @@ The scaffold is complete when the items below are checked. A real wiki built on 
   - [x] `.claude/agents/wiki-auditor.md`
   - [x] `.claude/skills/wiki-ingest/SKILL.md` (full ingest + audit-only mode)
 - [x] End-to-end ingest with correct claim typing, provenance, and independent audit report
-- [ ] Query with citations and dual output
-- [ ] Lint with structural + conceptual checks (produces report; applies no fixes without approval)
-- [ ] Cross-reference and contradiction behaviors exercised across at least 2 overlapping throwaway ingests
+- [x] Query with citations and dual output
+- [x] Lint with structural + conceptual checks (produces report; applies no fixes without approval)
+- [ ] Cross-reference and contradiction behaviors exercised across at least 2 overlapping throwaway ingests (1 overlapping ingest done; cross-ref + contradiction surfacing exercised, but 2nd overlap still pending)
 - [ ] Source-update (hash drift) and hash-match audit-only paths both exercised
-- [ ] Log has entries for ingests, queries, and lint
-- [ ] Synthesis updated across multiple ingests
+- [x] Log has entries for ingests, queries, and lint
+- [ ] Synthesis updated across multiple ingests (2 ingests integrated; Phase 3 query did not warrant synthesis revision)
 - [x] CLAUDE.md Wiki Conventions has entries from real use
