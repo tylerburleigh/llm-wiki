@@ -112,7 +112,7 @@ If during reading you notice:
 - An unanswered `[!gap]` that the current session could plausibly fill from a source already in the wiki.
 - A broken or unresolved wikilink.
 
-Report these to the user as observations at the end of the answer. Do **not** edit pages in response — that is `/wiki-ingest`'s or `/wiki-lint`'s job. Mixing query with repair stretches the skill's contract and muddies what was changed when something goes wrong.
+Report these to the user as observations at the end of the answer. Do **not** edit pages in response — that is `/wiki-repair`'s, `/wiki-ingest`'s, or `/wiki-lint`'s job depending on whether the work is a scoped correction, source refresh, or broader health pass. Mixing query with repair stretches the skill's contract and muddies what was changed when something goes wrong.
 
 ### 8. Present to the user
 
@@ -132,6 +132,6 @@ Report these to the user as observations at the end of the answer. Do **not** ed
 
 - Does not commit to git. Human reviews.
 - Does not ingest new sources. If the question requires a source not in the wiki, route to `/wiki-ingest`.
-- Does not modify existing wiki pages in response to findings. Stale and gap observations go to the user; fixes happen in `/wiki-ingest` (refresh path) or `/wiki-lint`.
+- Does not modify existing wiki pages in response to findings. Stale and gap observations go to the user; fixes happen in `/wiki-repair` (scoped correction), `/wiki-ingest` (refresh path), or `/wiki-lint` (broader cleanup).
 - Does not modify `CLAUDE.md`, `purpose.md`, `writing-style.md`, `wiki/conventions.md`, or anything in `raw/`.
 - Does not bypass claim typing. A new filed page must still use `[!source]`, `[!analysis]`, `[!unverified]`, `[!gap]` correctly — citing the query didn't bless synthesis claims as sourced.

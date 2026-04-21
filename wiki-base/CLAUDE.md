@@ -217,7 +217,7 @@ update the wiki, creating new pages and revising existing ones as
 needed. Track provenance and surface contradictions: an unsourced
 claim promoted to fact poisons everything built on it. Update the
 index, synthesis, and log when done; each is how the wiki compounds.
-Commit via git.
+Summarize what changed. The human reviews and commits via git.
 
 The `/wiki-ingest` skill (in `.claude/skills/wiki-ingest/`) operationalizes
 this workflow with two subagents: `wiki-extractor` writes the pages, and
@@ -271,8 +271,10 @@ follow links. Cite specific pages. Distinguish sourced claims from your
 inferences: without the distinction, inferences get re-read as facts
 and the wiki loses its epistemic foundation. If the answer is valuable,
 file it as a new page. If you find gaps or stale content, surface them;
-fixes go to ingest or lint, not query, because mixing repair with query
-obscures what changed when something goes wrong.
+fixes go to repair, ingest, or lint depending on whether the work is a
+scoped correction, source refresh, or structural cleanup. Do not mix
+repair into query, because that obscures what changed when something
+goes wrong.
 
 Answers can take different forms: markdown page, comparison table,
 Marp slide deck, or other formats as appropriate.
@@ -282,6 +284,19 @@ this workflow — context reading, read plan, claim-typed answer assembly,
 filing decision, and log/index/synthesis updates. Use the skill for
 substantive questions; for trivial index lookups, answering inline is
 fine.
+
+### Repair
+
+Your goal is to make scoped corrective edits to pages already in the
+wiki. Repair is for known problems: attribution mismatches, missing
+scope qualifiers, stale status fields, missing cross-references, or
+other issues surfaced by audit, lint, or human review. It is not a
+re-ingest. Read the affected pages and, when the issue is source-grounded,
+read the relevant source-summary pages and raw source text. Make the
+smallest defensible edit, preserve claim typing, update `updated:`,
+repair `sources:` / index / log entries if the edit changes them, and
+stop when the named issue is resolved. Use the `/wiki-repair` skill for
+this work. The human reviews and commits.
 
 ### Lint
 

@@ -31,6 +31,7 @@ class SmokeTests(unittest.TestCase):
             self.assertEqual(created.returncode, 0, created.stderr)
             self.assertTrue((target / "scripts/wiki-lint.py").is_file())
             self.assertTrue((target / "scripts/wiki-doctor.sh").is_file())
+            self.assertTrue((target / ".claude/skills/wiki-repair/SKILL.md").is_file())
 
             synthesis = (target / "wiki/synthesis.md").read_text(encoding="utf-8")
             self.assertNotIn("{{date}}", synthesis)
@@ -83,6 +84,62 @@ tags: []
         self.assertEqual(frontmatter["type"], "entity")
         self.assertEqual(frontmatter["aliases"], ["ETS", "Educational Testing Service"])
         self.assertEqual(frontmatter["sources"], ["[[Source Summary]]"])
+
+    def test_lint_detects_bare_claim_candidates_and_summary(self) -> None:
+        lint_path = REPO_ROOT / "wiki-base/scripts/wiki-lint.py"
+        spec = importlib.util.spec_from_file_location("wiki_lint", lint_path)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        page = module.Page(
+            path=Path("wiki/concepts/Test Concept.md"),
+            frontmatter={
+                "type": "concept",
+                "sources": ["[[Test Source]]"],
+                "created": "2026-04-21",
+                "updated": "2026-04-21",
+                "status": "current",
+                "tags": [],
+            },
+            body=(
+                "> [!tldr]\n"
+                "> Example.\n\n"
+                "This paragraph states a claim outside a typed callout.\n\n"
+                "> [!source]\n"
+                "> Supported fact. [[Test Source]]\n"
+            ),
+            tldr="Example.",
+        )
+        source_page = module.Page(
+            path=Path("wiki/sources/Test Source.md"),
+            frontmatter={
+                "type": "source-summary",
+                "raw_path": "raw/test.md",
+                "raw_hash": "deadbeef",
+                "sources": [],
+                "created": "2026-04-21",
+                "updated": "2026-04-21",
+                "status": "current",
+                "tags": [],
+            },
+            body="> [!tldr]\n> Source.\n",
+            tldr="Source.",
+        )
+        vault = module.Vault(root=REPO_ROOT)
+        vault.pages = {"Test Concept": page, "Test Source": source_page}
+
+        module.check_bare_claim_candidates(vault)
+        self.assertTrue(
+            any(f.category == "bare-claim-candidate" for f in vault.findings)
+        )
+
+        summary = module.compute_health_summary(vault)
+        rendered = "\n".join(module.render_health_summary(summary))
+        self.assertIn("wiki-health:", rendered)
+        self.assertIn("pages with open gaps:", rendered)
 
 
 if __name__ == "__main__":

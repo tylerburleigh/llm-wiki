@@ -18,6 +18,8 @@ Checks implemented:
     sources: contains it)
   - Hash drift (each source-summary raw_hash matches sha256 of the file
     at raw_path; missing files reported separately)
+  - Bare-claim candidates (heuristic prose outside typed callouts;
+    synthesis.md exempt)
 
 Usage:
     python3 scripts/wiki-lint.py [--vault <dir>] [--category <name>]
@@ -37,6 +39,7 @@ import hashlib
 import re
 import sys
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable
 
@@ -73,6 +76,12 @@ FILENAME_RE = re.compile(r"^[A-Z][A-Za-z0-9 \-()]*$")
 INDEX_ENTRY_RE = re.compile(
     r"^\s*-\s*\[\[([^\]|#]+?)\]\]\s*\((\d+)\)\s*[—\-]\s*(.+?)\s*$"
 )
+LIST_LINE_RE = re.compile(r"^\s*(?:[-*+] |\d+\. )")
+WIKILINK_ONLY_RE = re.compile(r"^\s*!?\[\[[^\]]+\]\]\s*$")
+AUDIT_CALLOUT_RE = re.compile(
+    r"^\s*>\s*\[!gap\]\s+Extraction coverage of this ingest",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 @dataclass
@@ -106,6 +115,17 @@ class Vault:
 
     def add(self, category: str, path: Path | None, message: str) -> None:
         self.findings.append(Finding(category, path, message))
+
+
+@dataclass
+class HealthSummary:
+    total_pages: int
+    by_type: dict[str, int]
+    thinly_sourced_pages: int
+    pages_with_open_gaps: int
+    pages_with_source_no_analysis: int
+    stale_hubs: int
+    source_summaries_missing_audit: int
 
 
 # ---------- frontmatter + body parsing ----------
@@ -631,6 +651,170 @@ def check_hash_drift(vault: Vault) -> None:
             )
 
 
+def is_structural_line(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return True
+    if stripped.startswith(("#", ">", "|", "<!--")):
+        return True
+    if stripped == "-->" or stripped in {"---", "***"}:
+        return True
+    if LIST_LINE_RE.match(line):
+        return True
+    if WIKILINK_ONLY_RE.match(stripped):
+        return True
+    return False
+
+
+def looks_like_claim_block(text: str) -> bool:
+    words = re.findall(r"[A-Za-z0-9][A-Za-z0-9'-]*", text)
+    if len(words) < 4:
+        return False
+    if re.search(r"[.!?]", text):
+        return True
+    return len(words) >= 9
+
+
+def check_bare_claim_candidates(vault: Vault) -> None:
+    for page in vault.pages.values():
+        if page.frontmatter is None:
+            continue
+        if page.frontmatter.get("type") == "synthesis":
+            continue
+
+        lines = page.body.splitlines()
+        in_fence = False
+        block: list[str] = []
+        block_start = 0
+
+        def flush() -> None:
+            nonlocal block, block_start
+            if not block:
+                return
+            text = " ".join(part.strip() for part in block).strip()
+            if looks_like_claim_block(text):
+                snippet = text[:100]
+                if len(text) > 100:
+                    snippet += "…"
+                vault.add(
+                    "bare-claim-candidate",
+                    page.path,
+                    f"body prose outside typed callout near body line {block_start}: `{snippet}`",
+                )
+            block = []
+            block_start = 0
+
+        for lineno, line in enumerate(lines, start=1):
+            stripped = line.strip()
+            if stripped.startswith("```"):
+                flush()
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            if is_structural_line(line):
+                flush()
+                continue
+            if not block:
+                block_start = lineno
+            block.append(line)
+
+        flush()
+
+
+def page_has_callout(page: Page, callout: str) -> bool:
+    pattern = re.compile(
+        rf"^\s*>\s*\[!{re.escape(callout)}\]",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    return bool(pattern.search(page.body))
+
+
+def parse_iso_date(value: object) -> date | None:
+    if not isinstance(value, str) or not ISO_DATE_RE.match(value):
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def compute_backlink_counts(vault: Vault) -> dict[str, int]:
+    counts = {stem: 0 for stem in vault.pages}
+    for page in vault.pages.values():
+        for target in set(extract_wikilink_targets(page.body)):
+            if target in counts:
+                counts[target] += 1
+    return counts
+
+
+def compute_health_summary(vault: Vault) -> HealthSummary:
+    by_type = {typ: 0 for typ in sorted(VALID_TYPES)}
+    backlinks = compute_backlink_counts(vault)
+    today = date.today()
+
+    thinly_sourced_pages = 0
+    pages_with_open_gaps = 0
+    pages_with_source_no_analysis = 0
+    stale_hubs = 0
+    source_summaries_missing_audit = 0
+
+    for page in vault.pages.values():
+        fm = page.frontmatter or {}
+        typ = fm.get("type")
+        if isinstance(typ, str) and typ in by_type:
+            by_type[typ] += 1
+
+        sources = fm.get("sources")
+        if (
+            isinstance(sources, list)
+            and len(sources) == 1
+            and typ not in {"source-summary", "synthesis"}
+        ):
+            thinly_sourced_pages += 1
+
+        if page_has_callout(page, "gap"):
+            pages_with_open_gaps += 1
+
+        if page_has_callout(page, "source") and not page_has_callout(page, "analysis"):
+            pages_with_source_no_analysis += 1
+
+        updated = parse_iso_date(fm.get("updated"))
+        if updated is not None and backlinks.get(page.stem, 0) >= 5:
+            if (today - updated).days > 30:
+                stale_hubs += 1
+
+        if typ == "source-summary" and not AUDIT_CALLOUT_RE.search(page.body):
+            source_summaries_missing_audit += 1
+
+    return HealthSummary(
+        total_pages=len(vault.pages),
+        by_type=by_type,
+        thinly_sourced_pages=thinly_sourced_pages,
+        pages_with_open_gaps=pages_with_open_gaps,
+        pages_with_source_no_analysis=pages_with_source_no_analysis,
+        stale_hubs=stale_hubs,
+        source_summaries_missing_audit=source_summaries_missing_audit,
+    )
+
+
+def render_health_summary(summary: HealthSummary) -> list[str]:
+    return [
+        "wiki-health: "
+        f"{summary.total_pages} pages "
+        f"({summary.by_type['source-summary']} sources, "
+        f"{summary.by_type['entity']} entities, "
+        f"{summary.by_type['concept']} concepts, "
+        f"{summary.by_type['comparison']} comparisons, "
+        f"{summary.by_type['synthesis']} synthesis)",
+        f"thinly sourced pages: {summary.thinly_sourced_pages}",
+        f"pages with open gaps: {summary.pages_with_open_gaps}",
+        f"pages with [!source] but no [!analysis]: {summary.pages_with_source_no_analysis}",
+        f"stale hub pages (>30 days old, 5+ backlinks): {summary.stale_hubs}",
+        f"source summaries missing extraction audit callout: {summary.source_summaries_missing_audit}",
+    ]
+
+
 # ---------- entry point ----------
 
 
@@ -642,6 +826,7 @@ CHECKS: dict[str, Callable[["Vault"], None]] = {
     "sources-invariant": check_sources_invariant,
     "aliases": check_entity_aliases,
     "hash-drift": check_hash_drift,
+    "bare-claims": check_bare_claim_candidates,
 }
 
 
@@ -660,6 +845,16 @@ def main(argv: list[str]) -> int:
         choices=sorted(CHECKS.keys()),
         help="run only the named category (repeatable); default: all",
     )
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="print a health summary after validation output",
+    )
+    parser.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="print only the health summary and skip validation checks",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.vault).resolve()
@@ -670,12 +865,20 @@ def main(argv: list[str]) -> int:
     vault = Vault(root=root)
     collect_pages(vault)
 
+    if args.summary_only:
+        for line in render_health_summary(compute_health_summary(vault)):
+            print(line)
+        return 0
+
     selected = args.category or list(CHECKS.keys())
     for name in selected:
         CHECKS[name](vault)
 
     if not vault.findings:
         print(f"wiki-lint: clean ({len(vault.pages)} pages checked)")
+        if args.summary:
+            for line in render_health_summary(compute_health_summary(vault)):
+                print(line)
         return 0
 
     by_category: dict[str, list[Finding]] = {}
@@ -688,6 +891,9 @@ def main(argv: list[str]) -> int:
             print(f"  {f.render(root)}")
     print(f"\nwiki-lint: {len(vault.findings)} finding(s) across "
           f"{len(by_category)} categor(ies); {len(vault.pages)} pages")
+    if args.summary:
+        for line in render_health_summary(compute_health_summary(vault)):
+            print(line)
     return 1
 
 

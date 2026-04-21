@@ -69,13 +69,19 @@ If you'd rather not pipe `install.sh` into a shell, clone manually and run `scri
 
 `wiki-lint.py` runs on the scaffolded schema with Python's standard library. The only packaged Python dependency is `pymupdf4llm` for PDF ingest.
 
+To run the repo smoke tests during development:
+
+```sh
+python3 -m unittest -q
+```
+
 Obsidian is optional. The vault is plain markdown and every agent operation has a grep/file-I/O fallback; Obsidian only adds graph view, backlinks panel, and live wikilink rendering for human browsing.
 
 ## What's here
 
 ### Source material
 
-- **`wiki-base/`** — Scaffolding for a new wiki: an empty Obsidian vault skeleton (`CLAUDE.md` schema, templates, empty `index.md`/`log.md`/`synthesis.md`), four Claude Code skills (`/wiki-ingest`, `/wiki-query`, `/wiki-purpose`, `/wiki-lint`), the `wiki-extractor` and `wiki-auditor` subagents that back ingest, `scripts/wiki-lint.py` for deterministic schema validation, and `scripts/wiki-doctor.sh` for first-run health checks. This is the headline deliverable — `llm-wiki-new` (after `install.sh`) spawns a fresh wiki from it.
+- **`wiki-base/`** — Scaffolding for a new wiki: an empty Obsidian vault skeleton (`CLAUDE.md` schema, templates, empty `index.md`/`log.md`/`synthesis.md`), five Claude Code skills (`/wiki-ingest`, `/wiki-query`, `/wiki-repair`, `/wiki-purpose`, `/wiki-lint`), the `wiki-extractor` and `wiki-auditor` subagents that back ingest, `scripts/wiki-lint.py` for deterministic schema validation plus lightweight epistemic checks, and `scripts/wiki-doctor.sh` for first-run health checks. This is the headline deliverable — `llm-wiki-new` (after `install.sh`) spawns a fresh wiki from it.
 
 - **`scripts/new-wiki.sh`** — Spawns a new wiki from `wiki-base/` into a target directory. Creates the expected subdirectories (entities, concepts, sources, comparisons, raw/assets) with `.gitkeep` files. Pass `--git` to initialize a fresh git repo for the new wiki, `--force` to overwrite an existing target. `install.sh` symlinks this as `llm-wiki-new` on your `PATH`; direct invocation is the manual-install path.
 

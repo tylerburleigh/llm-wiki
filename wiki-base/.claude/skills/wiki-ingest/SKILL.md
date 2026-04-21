@@ -66,9 +66,9 @@ Pass: `source_md_path`, `source_summary_path`, `pages_created` (paths), `pages_u
 
 **Extract once, audit independently.** The auditor gets file paths and a date, nothing else. Independence is what lets the audit catch gaps the extractor would have rationalized.
 
-**Never fix gaps inline.** The skill produces pages plus a gap callout. It does not produce fixed pages. Do not backfill missing pages, revise flagged `[!source]` claims, or edit existing pages in response to the gap list. Mixing extraction with repair obscures what was changed when, which makes root-cause analysis impossible on bad ingests. Lint fixes; subsequent ingests touching the same pages fix.
+**Never fix gaps inline.** The skill produces pages plus a gap callout. It does not produce fixed pages. Do not backfill missing pages, revise flagged `[!source]` claims, or edit existing pages in response to the gap list. Mixing extraction with repair obscures what was changed when, which makes root-cause analysis impossible on bad ingests. Use `/wiki-repair` for scoped corrective follow-up; use later ingests when the source itself changed.
 
-*Exception:* attribution-mismatch findings — actual misattributions (`[!source]` callouts the source doesn't support, overstated paraphrases, reconstructed figures mislabeled as `[!source]`) — surface prominently. The human decides whether to fix inline or file as known errors.
+*Exception:* attribution-mismatch findings — actual misattributions (`[!source]` callouts the source doesn't support, overstated paraphrases, reconstructed figures mislabeled as `[!source]`) — surface prominently. The human decides whether to fix them immediately via `/wiki-repair` or file them as known errors.
 
 *Exception to the exception:* on a drift refresh, if the extractor is rewriting a block the prior audit flagged (scope-drift, attribution-mismatch), fix it as part of the rewrite. A block already in the edit path is the right moment to restore a missing scope qualifier or split a stitched quote. A gap "passively preserved" becomes a fresh extraction choice once the block is rewritten without addressing it.
 

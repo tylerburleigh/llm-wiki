@@ -91,6 +91,7 @@ With approval or `--apply`:
 
 - Apply only the approved fixes.
 - Prefer mechanical, local fixes first: frontmatter corrections, link repairs, index updates, stale status flips with clear justification.
+- Route source-grounded attribution or scope repairs to `/wiki-repair` unless the user explicitly asked to apply them here.
 - Do not rewrite `purpose.md`, `writing-style.md`, or `raw/`.
 - If a fix turns into source refresh work, stop and route that item to `/wiki-ingest`.
 

@@ -94,6 +94,15 @@ if command -v python3 >/dev/null 2>&1; then
   fi
   rm -f "$LINT_OUTPUT"
 
+  HEALTH_OUTPUT="$(mktemp)"
+  if python3 "$ROOT/scripts/wiki-lint.py" --vault "$ROOT" --summary-only >"$HEALTH_OUTPUT" 2>&1; then
+    say_ok "health" "$(head -n 1 "$HEALTH_OUTPUT")"
+    sed -n '2,$p' "$HEALTH_OUTPUT" | sed 's/^/     /'
+  else
+    say_warn "health" "could not compute wiki health summary"
+  fi
+  rm -f "$HEALTH_OUTPUT"
+
   if python3 -c "import pymupdf4llm" >/dev/null 2>&1; then
     say_ok "pdf" "pymupdf4llm is installed"
   else
