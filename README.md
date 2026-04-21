@@ -52,19 +52,22 @@ Install the repo and a launcher on your `PATH`:
 curl -fsSL https://raw.githubusercontent.com/foundry-works/llm-wiki/main/install.sh | sh
 ```
 
-This clones the repo to `~/.local/share/llm-wiki` and symlinks `scripts/new-wiki.sh` to `~/.local/bin/llm-wiki-new`. Override with `LLM_WIKI_DIR` / `LLM_WIKI_BIN` if you prefer different paths. Re-run the installer to update.
+This clones the repo to `~/.local/share/llm-wiki` and symlinks `scripts/new-wiki.sh` and `scripts/wiki-doctor.sh` to `~/.local/bin/llm-wiki-new` and `~/.local/bin/llm-wiki-doctor`. Override with `LLM_WIKI_DIR` / `LLM_WIKI_BIN` if you prefer different paths. Re-run the installer to update.
 
 Then spawn your first wiki:
 
 ```sh
 llm-wiki-new ~/wikis/my-wiki --git
 cd ~/wikis/my-wiki
-pip install -r requirements.txt   # PyYAML + pymupdf4llm
+llm-wiki-doctor .
+python3 -m pip install -r requirements.txt   # optional: PDF ingest support
 # edit purpose.md, drop a source into raw/, then:
 claude     # and invoke: /wiki-ingest raw/<your-source>
 ```
 
 If you'd rather not pipe `install.sh` into a shell, clone manually and run `scripts/new-wiki.sh` directly — the launcher is just a convenience.
+
+`wiki-lint.py` runs on the scaffolded schema with Python's standard library. The only packaged Python dependency is `pymupdf4llm` for PDF ingest.
 
 Obsidian is optional. The vault is plain markdown and every agent operation has a grep/file-I/O fallback; Obsidian only adds graph view, backlinks panel, and live wikilink rendering for human browsing.
 
@@ -72,11 +75,13 @@ Obsidian is optional. The vault is plain markdown and every agent operation has 
 
 ### Source material
 
-- **`wiki-base/`** — Scaffolding for a new wiki: an empty Obsidian vault skeleton (`CLAUDE.md` schema, templates, empty `index.md`/`log.md`/`synthesis.md`), three Claude Code skills (`/wiki-ingest`, `/wiki-query`, `/wiki-purpose`), the `wiki-extractor` and `wiki-auditor` subagents that back ingest, and `scripts/wiki-lint.py` for deterministic schema validation. This is the headline deliverable — `llm-wiki-new` (after `install.sh`) spawns a fresh wiki from it.
+- **`wiki-base/`** — Scaffolding for a new wiki: an empty Obsidian vault skeleton (`CLAUDE.md` schema, templates, empty `index.md`/`log.md`/`synthesis.md`), four Claude Code skills (`/wiki-ingest`, `/wiki-query`, `/wiki-purpose`, `/wiki-lint`), the `wiki-extractor` and `wiki-auditor` subagents that back ingest, `scripts/wiki-lint.py` for deterministic schema validation, and `scripts/wiki-doctor.sh` for first-run health checks. This is the headline deliverable — `llm-wiki-new` (after `install.sh`) spawns a fresh wiki from it.
 
 - **`scripts/new-wiki.sh`** — Spawns a new wiki from `wiki-base/` into a target directory. Creates the expected subdirectories (entities, concepts, sources, comparisons, raw/assets) with `.gitkeep` files. Pass `--git` to initialize a fresh git repo for the new wiki, `--force` to overwrite an existing target. `install.sh` symlinks this as `llm-wiki-new` on your `PATH`; direct invocation is the manual-install path.
 
-- **`install.sh`** — One-shot installer. Clones the repo to `~/.local/share/llm-wiki` and symlinks `scripts/new-wiki.sh` as `llm-wiki-new` in `~/.local/bin`. See [Getting started](#getting-started).
+- **`scripts/wiki-doctor.sh`** — Wrapper around the scaffolded doctor check. Point it at a wiki root (or run `llm-wiki-doctor .` inside one) to verify structure, run `wiki-lint.py`, and surface optional-tooling gaps.
+
+- **`install.sh`** — One-shot installer. Clones the repo to `~/.local/share/llm-wiki` and symlinks `scripts/new-wiki.sh` / `scripts/wiki-doctor.sh` as `llm-wiki-new` / `llm-wiki-doctor` in `~/.local/bin`. See [Getting started](#getting-started).
 
 - **`PHILOSOPHY.md`** — The principles behind the LLM Wiki design. Covers: compilation over retrieval, agent as writer (not pipeline), strict data contracts with flexible workflows, epistemic integrity via claim typing, human-as-editor-in-chief, schema co-evolution, and compounding value.
 

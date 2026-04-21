@@ -100,7 +100,7 @@ The design keeps the reusable core minimal — markdown files, a handful of temp
 
 The central design goal is that every interaction with the wiki makes it more valuable.
 
-An ingest doesn't just add a summary. It updates entity pages, revises concept pages, strengthens or challenges the synthesis, adds cross-references, and logs what happened. A query doesn't just produce an answer: it can file the answer as a new page, fix gaps it discovers, and update stale content. A lint pass doesn't just find broken links: it identifies conceptual gaps and suggests new lines of investigation.
+An ingest doesn't just add a summary. It updates entity pages, revises concept pages, strengthens or challenges the synthesis, adds cross-references, and logs what happened. A query doesn't just produce an answer: it can file the answer as a new page and surface gaps or stale content for later repair. A lint pass doesn't just find broken links: it identifies conceptual gaps and suggests new lines of investigation.
 
 Even the schema compounds. Every correction, every learned convention, every workflow refinement makes the next session more effective than the last.
 

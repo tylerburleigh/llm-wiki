@@ -21,7 +21,7 @@ You have six building blocks. Compose them. The principles below describe *when 
 
 - If PDF: convert to markdown via `pymupdf4llm`. Store the converted `.md` alongside the original. The original PDF is the immutable artifact.
   ```bash
-  python -c "import pymupdf4llm; open('raw/<name>.md','w').write(pymupdf4llm.to_markdown('raw/<name>.pdf'))"
+  python3 -c "import pymupdf4llm; open('raw/<name>.md','w').write(pymupdf4llm.to_markdown('raw/<name>.pdf'))"
   ```
 - If already markdown: it should be at `raw/<name>.md`. If the user gave a path outside `raw/`, copy it in first. Never read from outside `raw/` for ingestion.
 - Returns: `raw_path` (the original — PDF for PDFs, `.md` for markdown sources), `source_md_path` (the markdown form).
@@ -115,13 +115,13 @@ A summary to the user:
 
 ## Error handling
 
-- **`pymupdf4llm` not installed.** Stop, tell the user to `pip install pymupdf4llm`.
+- **`pymupdf4llm` not installed.** Stop, tell the user to run `python3 -m pip install -r requirements.txt`.
 - **Hash mismatch on audit-only.** Source has drifted since ingestion. Stop; recommend full re-ingest. Do not audit.
 - **Attribution-mismatch anomalies.** Potential extraction errors, not extraction gaps. Surface prominently.
 
 ## What this skill does NOT do
 
 - Commit to git. The human reviews and commits.
-- Run lint (`/wiki-lint`, when it exists). Lint is a separate operation.
+- Run `/wiki-lint`. Lint is a separate operation.
 - Modify `CLAUDE.md`, `purpose.md`, `writing-style.md`, or anything in `raw/`.
 - Bulk-ingest. One source per invocation. Long sources are split into chapters/sections by the user; each chunk is a separate invocation.

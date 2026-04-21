@@ -293,7 +293,7 @@ ends (unreachable knowledge), unresolved links (broken tooling),
 unverified claims (epistemic debt), and gaps (known-unknowns to
 triage).
 
-Run `scripts/wiki-lint.py` first. It deterministically validates the
+Run `python3 scripts/wiki-lint.py` first. It deterministically validates the
 machine-checkable invariants: frontmatter shape per type (core fields
 plus per-type fields; ISO 8601 dates; lists of the right shape); TLDR
 is the first content block after frontmatter; filenames follow the
@@ -304,6 +304,8 @@ page body must appear in that page's frontmatter `sources:`); hash
 drift (each source-summary's `raw_hash` matches `sha256(raw_path)`).
 The validator exits non-zero and reports findings by category; treat
 every finding as something to fix or justify, not noise.
+The scaffolded validator runs with Python's standard library; PDF ingest
+support remains the only packaged Python dependency.
 
 After the validator passes, handle the judgment-dependent checks it
 can't do: flag prose that looks like a factual or analytical claim but
@@ -324,6 +326,12 @@ generic suggestions.
 
 Report findings by category. Append a log entry including the audited
 claim references. Apply fixes only with human approval.
+
+The `/wiki-lint` skill (in `.claude/skills/wiki-lint/`) operationalizes
+this workflow — deterministic validation first, then bare-claim review,
+sampled claim audits, conceptual gap review, and log entry updates. Use
+the skill for routine maintenance; running `scripts/wiki-lint.py`
+directly is the machine-checkable first pass.
 
 ### Synthesis
 

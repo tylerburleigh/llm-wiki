@@ -23,11 +23,16 @@ Usage:
     python3 scripts/wiki-lint.py [--vault <dir>] [--category <name>]
 
 Defaults to the current directory as the vault root.
+
+No external dependencies are required for the scaffolded schema. If
+PyYAML is installed, the linter uses it; otherwise it falls back to a
+small parser that handles the frontmatter shapes this wiki generates.
 """
 
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import re
 import sys
@@ -35,7 +40,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-import yaml
+try:
+    import yaml
+except ModuleNotFoundError:  # pragma: no cover - exercised in smoke tests
+    yaml = None
 
 
 VALID_TYPES = {"entity", "concept", "source-summary", "comparison", "synthesis"}
@@ -103,6 +111,112 @@ class Vault:
 # ---------- frontmatter + body parsing ----------
 
 
+def parse_yaml_scalar(text: str) -> object:
+    value = text.strip()
+    if value == "[]":
+        return []
+    if value.startswith("[") and value.endswith("]") and not value.startswith("[["):
+        return parse_yaml_flow_list(value)
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        try:
+            return ast.literal_eval(value)
+        except (SyntaxError, ValueError):
+            return value[1:-1]
+    return value
+
+
+def split_flow_items(text: str) -> list[str]:
+    items: list[str] = []
+    buf: list[str] = []
+    in_single = False
+    in_double = False
+    escape = False
+
+    for ch in text:
+        if escape:
+            buf.append(ch)
+            escape = False
+            continue
+        if ch == "\\" and in_double:
+            buf.append(ch)
+            escape = True
+            continue
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            buf.append(ch)
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            buf.append(ch)
+            continue
+        if ch == "," and not in_single and not in_double:
+            items.append("".join(buf).strip())
+            buf = []
+            continue
+        buf.append(ch)
+
+    tail = "".join(buf).strip()
+    if tail:
+        items.append(tail)
+    return items
+
+
+def parse_yaml_flow_list(text: str) -> list[object]:
+    inner = text[1:-1].strip()
+    if not inner:
+        return []
+    return [parse_yaml_scalar(item) for item in split_flow_items(inner)]
+
+
+def parse_minimal_yaml_mapping(text: str) -> tuple[dict | None, str | None]:
+    """Parse the limited YAML subset used by scaffolded wiki pages."""
+
+    result: dict[str, object] = {}
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        raw = lines[i].rstrip()
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("#"):
+            i += 1
+            continue
+        if raw[:1].isspace():
+            return None, f"unexpected indentation on line {i + 1}"
+        if ":" not in raw:
+            return None, f"invalid frontmatter line {i + 1}: `{stripped}`"
+
+        key, rest = raw.split(":", 1)
+        key = key.strip()
+        value_text = rest.strip()
+        if not key:
+            return None, f"missing key on line {i + 1}"
+
+        if value_text:
+            result[key] = parse_yaml_scalar(value_text)
+            i += 1
+            continue
+
+        items: list[object] = []
+        i += 1
+        while i < len(lines):
+            item_raw = lines[i].rstrip()
+            item_stripped = item_raw.strip()
+            if not item_stripped or item_stripped.startswith("#"):
+                i += 1
+                continue
+            if not item_raw[:1].isspace():
+                break
+            if not item_stripped.startswith("- "):
+                return None, (
+                    f"expected list item under `{key}` on line {i + 1}"
+                )
+            items.append(parse_yaml_scalar(item_stripped[2:].strip()))
+            i += 1
+        result[key] = items
+
+    return result, None
+
+
 def split_frontmatter(text: str) -> tuple[dict | None, str, str | None]:
     """Return (frontmatter dict or None, body text, error message or None).
 
@@ -122,10 +236,16 @@ def split_frontmatter(text: str) -> tuple[dict | None, str, str | None]:
         return None, text, "frontmatter opened with `---` but never closed"
     fm_text = "".join(lines[1:end_idx])
     body = "".join(lines[end_idx + 1 :])
-    try:
-        fm = yaml.safe_load(fm_text) or {}
-    except yaml.YAMLError as exc:
-        return None, body, f"YAML parse error: {exc}"
+    if yaml is not None:
+        try:
+            fm = yaml.safe_load(fm_text) or {}
+        except yaml.YAMLError as exc:
+            return None, body, f"YAML parse error: {exc}"
+    else:
+        fm, err = parse_minimal_yaml_mapping(fm_text)
+        if err:
+            return None, body, err
+        fm = fm or {}
     if not isinstance(fm, dict):
         return None, body, "frontmatter is not a mapping"
     return fm, body, None

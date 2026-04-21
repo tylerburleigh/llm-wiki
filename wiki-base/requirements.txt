@@ -1,11 +1,8 @@
-# Python dependencies for the LLM Wiki scaffold.
+# Optional Python dependency for PDF ingest support.
 #
-# Install with: pip install -r requirements.txt
-#            or: uv pip install -r requirements.txt
-
-# Used by scripts/wiki-lint.py for frontmatter parsing.
-PyYAML
+# Install with: python3 -m pip install -r requirements.txt
+# Markdown-only ingest and scripts/wiki-lint.py work without extras.
 
 # Used by /wiki-ingest to convert PDF sources to markdown.
-# Invoked inline as: python -c "import pymupdf4llm; ..."
+# Invoked inline as: python3 -c "import pymupdf4llm; ..."
 pymupdf4llm

@@ -5,7 +5,7 @@
 # Usage:
 #   scripts/new-wiki.sh <target-dir> [--git] [--force]
 #
-# Copies wiki-base/ (schema, templates, skill, empty index/log/synthesis)
+# Copies wiki-base/ (schema, templates, skills, empty index/log/synthesis)
 # to <target-dir>, excluding smoke-test leftovers. Creates the wiki
 # subdirectories (entities, concepts, sources, comparisons) and
 # raw/assets/ so the vault is ready for /wiki-ingest.
@@ -112,11 +112,12 @@ cat <<EOF
 Wiki skeleton created at: $TARGET_ABS
 
 Next:
-  1. Install Python deps: pip install -r $TARGET_ABS/requirements.txt
-     (PyYAML for wiki-lint; pymupdf4llm for PDF ingest.)
-  2. Edit $TARGET_ABS/purpose.md — describe your research direction.
-  3. Drop a source file in $TARGET_ABS/raw/ (PDF or markdown).
-  4. Open the vault in Obsidian (optional, for browsing).
-  5. From $TARGET_ABS, run Claude Code and invoke /wiki-ingest <raw/your-source>.
+  1. Run $TARGET_ABS/scripts/wiki-doctor.sh
+  2. If you plan to ingest PDFs:
+     python3 -m pip install -r $TARGET_ABS/requirements.txt
+  3. Edit $TARGET_ABS/purpose.md — describe your research direction.
+  4. Drop a source file in $TARGET_ABS/raw/ (PDF or markdown).
+  5. Open the vault in Obsidian (optional, for browsing).
+  6. From $TARGET_ABS, run Claude Code and invoke /wiki-ingest <raw/your-source>.
 
 EOF

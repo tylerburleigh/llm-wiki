@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-04-21 — Revision 12
+
+Contract alignment, first-run fixes, and smoke coverage.
+
+### Added
+
+- **`/wiki-lint` skill.** The scaffold now ships a real lint skill under `wiki-base/.claude/skills/wiki-lint/`, covering deterministic validation, bare-claim review, sampled claim audits, conceptual weak-spot review, and log updates. (`wiki-base/.claude/skills/wiki-lint/SKILL.md`, `wiki-base/CLAUDE.md`)
+- **`wiki-doctor.sh`.** Added to spawned wikis and exposed as an installed launcher (`llm-wiki-doctor`). Checks vault structure, runs `wiki-lint.py`, and reports optional-tooling gaps without failing on them. (`wiki-base/scripts/wiki-doctor.sh`, `scripts/wiki-doctor.sh`, `install.sh`, `README.md`, `scripts/new-wiki.sh`)
+- **Smoke tests.** Added a stdlib `unittest` smoke suite covering wiki scaffolding, doctor flow, and the no-PyYAML lint parser path. (`tests/test_smoke.py`)
+
+### Changed
+
+- **`wiki-lint.py` no longer requires PyYAML on first run.** The script now falls back to a schema-sized frontmatter parser when PyYAML is unavailable, so scaffolded vaults lint clean on a stock Python 3 install. (`wiki-base/scripts/wiki-lint.py`)
+- **Runtime guidance standardized on `python3`.** README, scaffold output, skill docs, and requirements comments now use `python3` / `python3 -m pip` consistently. (`README.md`, `install.sh`, `scripts/new-wiki.sh`, `wiki-base/.claude/skills/wiki-ingest/SKILL.md`, `wiki-base/requirements.txt`)
+- **Cold-start path shortened.** Getting started now runs `llm-wiki-doctor` immediately after spawning a wiki and treats `requirements.txt` as optional PDF-ingest support, not a universal setup step. (`README.md`, `install.sh`, `scripts/new-wiki.sh`)
+- **Docs and shipped behavior re-aligned.** Philosophy now matches the current query contract (queries surface stale/gap findings rather than silently repairing pages), and repo docs now list the shipped lint skill plus doctor tooling. (`PHILOSOPHY.md`, `README.md`, `wiki-base/CLAUDE.md`)
+
 ## 2026-04-21 — Revision 11
 
 First-time-setup ergonomics and repo cleanup. Goal: collapse the cold-start path from "clone → cd → script → cd → edit → claude → ingest" to "install → new-wiki → ingest."
