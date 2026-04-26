@@ -785,6 +785,10 @@ def parse_iso_date(value: object) -> date | None:
 def compute_backlink_counts(vault: Vault) -> dict[str, int]:
     counts = {stem: 0 for stem in vault.pages}
     for page in vault.pages.values():
+        # Meta pages are infrastructure. Their links should resolve, but they
+        # should not make knowledge pages look like graph hubs.
+        if page.frontmatter and page.frontmatter.get("type") == "meta":
+            continue
         for target in set(extract_wikilink_targets(page.body)):
             if target in counts:
                 counts[target] += 1
@@ -830,7 +834,7 @@ def compute_health_summary(vault: Vault) -> HealthSummary:
             pages_with_source_no_analysis += 1
 
         updated = parse_iso_date(fm.get("updated"))
-        if updated is not None and backlinks.get(page.stem, 0) >= 5:
+        if typ != "meta" and updated is not None and backlinks.get(page.stem, 0) >= 5:
             if (today - updated).days > 30:
                 stale_hubs += 1
 

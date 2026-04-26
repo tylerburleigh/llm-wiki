@@ -78,19 +78,20 @@ The lint pass *reports but does not fail* on these (judgment-dependent):
 
 When in doubt, follow the newer pattern: give a new infrastructure page `type: meta` with frontmatter rather than adding it to the legacy SPECIAL_FILES list.
 
-## Ingest Sequence
+## Graph Assembly Dependencies
 
-The order pages are created during an ingest. Every step depends on earlier ones; reversing any of these produces broken wikilinks or a stale synthesis.
+A substantive ingest leaves the graph coherent: provenance resolves,
+knowledge nodes point at each other deliberately, and derived files
+describe the final state rather than an intermediate draft. These
+dependencies explain what to keep aligned and why it matters:
 
-1. **Source-summary first.** Other pages will wikilink back to it; if it doesn't exist, those links resolve to nothing.
-2. **Entity pages.** Concepts often name entities ("X is the canonical implementation of Y"); writing concepts first forces the extractor to invent entity names that don't yet exist.
-3. **Concept pages.** The entities they reference now exist.
-4. **Comparison pages** (if any). They reference both entities and concepts, so they go last among content pages.
-5. **Update existing pages** flagged in the plan. These may gain wikilinks to pages just created, which now resolve.
-6. **Update `wiki/index.md`.** Add entries for new pages with one-line TLDRs and source counts.
-7. **Append `wiki/log.md`.** A single entry summarizing the ingest.
-8. **Update `wiki/synthesis.md`.** Revise the thesis to reflect what the new source changed.
-9. **Append `wiki/handoff.md`.** Note what was worked on, what's deferred, what the next session needs to know.
+| Dependency | What to keep aligned | Why it matters |
+|------------|----------------------|----------------|
+| Source-summary | Create or identify the source-summary before finalizing pages that cite it. | Other pages wikilink back to it; unresolved source links break provenance and make `[!source]` claims unauditable. |
+| Entity and concept targets | Make sure entity and concept wikilinks resolve before dependent prose is finalized. | Concepts often name entities, and entities often cite concepts. The graph can be assembled in either direction, but the final links must point at real pages. |
+| Comparison subjects | Keep `subjects:` frontmatter and body references in sync with existing pages. | Comparisons are relationship nodes. If the declared subjects and prose disagree, queries cannot reliably find or interpret the comparison. |
+| Existing pages | Revisit overlapping pages after new targets exist. | A new source can change how an old page should link, cite, or qualify a claim; targeted updates keep prior knowledge integrated. |
+| Derived infrastructure | Refresh `wiki/index.md`, append `wiki/log.md`, revise `wiki/synthesis.md` when the source changes the thesis, and append `wiki/handoff.md` when follow-up state matters. | These files are the wiki's navigation, history, thesis, and session memory. If they describe a pre-ingest state, future queries and ingests start from stale context. |
 
 ## Calibration Trail
 

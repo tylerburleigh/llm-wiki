@@ -20,6 +20,7 @@ State-tracking layer lifted from real-world wikis. Two specialized vaults (Inves
 - **`wiki-doctor.sh` checks for the new state-tracking files.** Reports a warning (not failure) when a meta file is missing, so existing vaults can adopt the layer at their own pace via `new-wiki.sh --into`. (`wiki-base/scripts/wiki-doctor.sh`)
 - **Skills now read `wiki/handoff.md`.** `/wiki-ingest` reads it during pre-check and appends an entry at session end; `/wiki-query` reads it before planning the read; `/wiki-lint` flags handoff currency and surfaces overdue backlog items. (`wiki-base/.claude/skills/wiki-ingest/SKILL.md`, `wiki-base/.claude/skills/wiki-query/SKILL.md`, `wiki-base/.claude/skills/wiki-lint/SKILL.md`)
 - **Health summary tallies meta pages.** `wiki-lint.py --summary` now reports the meta-page count alongside sources/entities/concepts/comparisons/synthesis, and excludes meta pages from the open-gaps and source-without-analysis tallies (their gaps are surfaced inside the backlog, not the page). (`wiki-base/scripts/wiki-lint.py`)
+- **Meta-page links do not create stale hubs.** Links from infrastructure pages still have to resolve, but they no longer count as backlinks for stale-hub detection. This keeps meta files from making knowledge pages look more central than they are. (`wiki-base/scripts/wiki-lint.py`, `wiki-base/wiki/docs/graph-protocol.md`, `tests/test_smoke.py`)
 
 ## 2026-04-21 — Revision 13
 

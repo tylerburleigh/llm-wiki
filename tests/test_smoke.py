@@ -170,6 +170,52 @@ tags: []
         prose = "See [[Real Link]] for context.\n"
         self.assertIn("Real Link", module.extract_wikilink_targets(prose))
 
+    def test_meta_links_do_not_make_stale_hubs(self) -> None:
+        lint_path = REPO_ROOT / "wiki-base/scripts/wiki-lint.py"
+        spec = importlib.util.spec_from_file_location("wiki_lint", lint_path)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        target = module.Page(
+            path=Path("wiki/concepts/Target Concept.md"),
+            frontmatter={
+                "type": "concept",
+                "sources": [],
+                "created": "2000-01-01",
+                "updated": "2000-01-01",
+                "status": "current",
+                "tags": [],
+            },
+            body="> [!tldr]\n> Target.\n",
+            tldr="Target.",
+        )
+        vault = module.Vault(root=REPO_ROOT)
+        vault.pages = {"Target Concept": target}
+        for i in range(5):
+            page = module.Page(
+                path=Path(f"wiki/Meta {i}.md"),
+                frontmatter={
+                    "type": "meta",
+                    "sources": [],
+                    "created": "2026-04-26",
+                    "updated": "2026-04-26",
+                    "status": "current",
+                    "tags": [],
+                },
+                body="> [!tldr]\n> Meta.\n\nSee [[Target Concept]].\n",
+                tldr="Meta.",
+            )
+            vault.pages[page.stem] = page
+
+        backlinks = module.compute_backlink_counts(vault)
+        self.assertEqual(backlinks["Target Concept"], 0)
+
+        summary = module.compute_health_summary(vault)
+        self.assertEqual(summary.stale_hubs, 0)
+
     def test_lint_detects_bare_claim_candidates_and_summary(self) -> None:
         lint_path = REPO_ROOT / "wiki-base/scripts/wiki-lint.py"
         spec = importlib.util.spec_from_file_location("wiki_lint", lint_path)
