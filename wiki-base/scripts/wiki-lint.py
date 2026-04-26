@@ -49,7 +49,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised in smoke tests
     yaml = None
 
 
-VALID_TYPES = {"entity", "concept", "source-summary", "comparison", "synthesis"}
+VALID_TYPES = {"entity", "concept", "source-summary", "comparison", "synthesis", "meta"}
 VALID_STATUSES = {"current", "stale"}
 CORE_FIELDS = {"type", "sources", "created", "updated", "status", "tags"}
 PER_TYPE_FIELDS: dict[str, set[str]] = {
@@ -58,9 +58,13 @@ PER_TYPE_FIELDS: dict[str, set[str]] = {
     "source-summary": {"raw_path", "raw_hash"},
     "comparison": {"subjects"},
     "synthesis": set(),
+    "meta": set(),
 }
 
-# Files inside wiki/ that don't follow the page schema
+# Files inside wiki/ that don't follow the page schema (legacy plain-markdown
+# infrastructure pages). The newer pattern is to give infrastructure pages
+# `type: meta` frontmatter so they validate cleanly while staying out of the
+# graph as knowledge nodes.
 SPECIAL_FILES = {"index.md", "log.md", "conventions.md"}
 # Page stems that legitimately use lowercase filenames (exempt from the
 # Title Case filename rule). These still get frontmatter and TLDR checks.
@@ -342,6 +346,11 @@ def check_filenames(vault: Vault) -> None:
     for page in vault.pages.values():
         if page.stem in LOWERCASE_STEM_EXEMPTIONS:
             continue
+        # Meta pages (infrastructure: handoff, backlog, decisions, graph-protocol,
+        # etc.) use lowercase-hyphen filenames so they read as infrastructure,
+        # not knowledge.
+        if page.frontmatter and page.frontmatter.get("type") == "meta":
+            continue
         if not FILENAME_RE.match(page.stem):
             vault.add(
                 "filename",
@@ -439,8 +448,40 @@ def check_frontmatter(vault: Vault) -> None:
                     )
 
 
+_INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
+
+
+def strip_code(text: str) -> str:
+    """Replace fenced code blocks and inline code spans with blank space.
+
+    Obsidian renders wikilinks inside ``` fences and inside `inline code`
+    as plain text, not as links. The graph doesn't see them. Strip both
+    here so lint matches the rendered behavior — example wikilinks in
+    code samples shouldn't be required to resolve.
+    """
+    # Strip fenced blocks line by line so line-number-based reporting
+    # elsewhere stays approximately accurate.
+    out: list[str] = []
+    in_fence = False
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            out.append("\n" if line.endswith("\n") else "")
+            continue
+        if in_fence:
+            out.append("\n" if line.endswith("\n") else "")
+            continue
+        out.append(line)
+    fenced_stripped = "".join(out)
+    return _INLINE_CODE_RE.sub("", fenced_stripped)
+
+
 def extract_wikilink_targets(text: str) -> list[str]:
-    return [m.group(1).strip() for m in WIKILINK_RE.finditer(text)]
+    return [
+        m.group(1).strip()
+        for m in WIKILINK_RE.finditer(strip_code(text))
+    ]
 
 
 def check_wikilink_resolution(vault: Vault) -> None:
@@ -490,15 +531,15 @@ def check_index(vault: Vault) -> None:
         vault.add("index", index_path, err)
 
     indexed_stems = {e[0] for e in entries}
-    # synthesis.md is a special page that may or may not appear in the index;
-    # we treat it as indexed-optional since the index template groups by
-    # Entities / Concepts / Sources / Comparisons.
+    # synthesis.md and `type: meta` infrastructure pages may or may not appear
+    # in the index; we treat them as indexed-optional since the index template
+    # groups by Entities / Concepts / Sources / Comparisons (knowledge nodes).
     page_stems_for_index: set[str] = set()
     for stem, page in vault.pages.items():
         fm = page.frontmatter
         if fm is None:
             continue
-        if fm.get("type") == "synthesis":
+        if fm.get("type") in ("synthesis", "meta"):
             continue
         page_stems_for_index.add(stem)
     page_stems = set(vault.pages.keys())
@@ -679,7 +720,9 @@ def check_bare_claim_candidates(vault: Vault) -> None:
     for page in vault.pages.values():
         if page.frontmatter is None:
             continue
-        if page.frontmatter.get("type") == "synthesis":
+        # synthesis is implicitly [!analysis]; meta pages are infrastructure
+        # (handoffs, backlogs, decisions logs) where prose-as-format is fine.
+        if page.frontmatter.get("type") in ("synthesis", "meta"):
             continue
 
         lines = page.body.splitlines()
@@ -769,14 +812,21 @@ def compute_health_summary(vault: Vault) -> HealthSummary:
         if (
             isinstance(sources, list)
             and len(sources) == 1
-            and typ not in {"source-summary", "synthesis"}
+            and typ not in {"source-summary", "synthesis", "meta"}
         ):
             thinly_sourced_pages += 1
 
-        if page_has_callout(page, "gap"):
+        # Meta pages (backlog, handoff, decisions, graph-protocol) often carry
+        # [!gap] callouts as part of their format — surfacing those as
+        # "open gaps" double-counts the gaps surfaced from content pages.
+        if typ != "meta" and page_has_callout(page, "gap"):
             pages_with_open_gaps += 1
 
-        if page_has_callout(page, "source") and not page_has_callout(page, "analysis"):
+        if (
+            typ != "meta"
+            and page_has_callout(page, "source")
+            and not page_has_callout(page, "analysis")
+        ):
             pages_with_source_no_analysis += 1
 
         updated = parse_iso_date(fm.get("updated"))
@@ -806,7 +856,8 @@ def render_health_summary(summary: HealthSummary) -> list[str]:
         f"{summary.by_type['entity']} entities, "
         f"{summary.by_type['concept']} concepts, "
         f"{summary.by_type['comparison']} comparisons, "
-        f"{summary.by_type['synthesis']} synthesis)",
+        f"{summary.by_type['synthesis']} synthesis, "
+        f"{summary.by_type['meta']} meta)",
         f"thinly sourced pages: {summary.thinly_sourced_pages}",
         f"pages with open gaps: {summary.pages_with_open_gaps}",
         f"pages with [!source] but no [!analysis]: {summary.pages_with_source_no_analysis}",

@@ -37,6 +37,18 @@ class SmokeTests(unittest.TestCase):
             self.assertNotIn("{{date}}", synthesis)
             self.assertIn('created: "', synthesis)
 
+            # The state-tracking layer ships scaffolded with date substitution
+            # so a fresh vault passes lint on day 1.
+            for rel in (
+                "wiki/handoff.md",
+                "wiki/backlog.md",
+                "wiki/decisions.md",
+                "wiki/docs/graph-protocol.md",
+            ):
+                contents = (target / rel).read_text(encoding="utf-8")
+                self.assertNotIn("{{date}}", contents, f"{rel} still has placeholder")
+                self.assertIn("type: meta", contents, f"{rel} missing meta type")
+
             status = run(["git", "-C", str(target), "status", "--short"])
             self.assertEqual(status.returncode, 0, status.stderr)
             self.assertEqual(status.stdout.strip(), "")
@@ -130,6 +142,33 @@ tags: []
         self.assertEqual(frontmatter["type"], "entity")
         self.assertEqual(frontmatter["aliases"], ["ETS", "Educational Testing Service"])
         self.assertEqual(frontmatter["sources"], ["[[Source Summary]]"])
+
+    def test_lint_skips_wikilinks_in_code(self) -> None:
+        lint_path = REPO_ROOT / "wiki-base/scripts/wiki-lint.py"
+        spec = importlib.util.spec_from_file_location("wiki_lint", lint_path)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        text = (
+            "See `[[Inline Example]]` and the block below.\n\n"
+            "```\n"
+            "[[Fenced Example]]\n"
+            "```\n\n"
+            "But `[[Real Link]]` outside code stays.\n"
+        )
+        targets = module.extract_wikilink_targets(text)
+        self.assertNotIn("Inline Example", targets)
+        self.assertNotIn("Fenced Example", targets)
+        # Inline code is also stripped, so [[Real Link]] inside backticks
+        # is NOT in the list either.
+        self.assertNotIn("Real Link", targets)
+
+        # A bare wikilink in prose still resolves.
+        prose = "See [[Real Link]] for context.\n"
+        self.assertIn("Real Link", module.extract_wikilink_targets(prose))
 
     def test_lint_detects_bare_claim_candidates_and_summary(self) -> None:
         lint_path = REPO_ROOT / "wiki-base/scripts/wiki-lint.py"

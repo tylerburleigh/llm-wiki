@@ -50,6 +50,15 @@ fi
 if [[ ! -f "$ROOT/scripts/wiki-lint.py" ]]; then
   say_fail "vault" "missing scripts/wiki-lint.py under $ROOT"
 fi
+for state_file in \
+  "wiki/handoff.md" \
+  "wiki/backlog.md" \
+  "wiki/decisions.md" \
+  "wiki/docs/graph-protocol.md"; do
+  if [[ ! -f "$ROOT/$state_file" ]]; then
+    say_warn "state" "missing $state_file (run new-wiki.sh --into to scaffold)"
+  fi
+done
 
 if [[ "$FAILURES" -gt 0 ]]; then
   printf '\nWiki doctor: FAIL (%s failure(s), %s warning(s))\n' \

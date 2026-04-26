@@ -38,7 +38,7 @@ Status:
 - **match** — source unchanged since last ingest; skip extract, run audit against existing pages.
 - **drift** — source has changed since last ingest; stop and ask the human whether to refresh affected pages or treat as a new source. Never silently overwrite.
 
-**precheck** — Read `CLAUDE.md`, `purpose.md`, and the source end to end. If `purpose.md` is empty (placeholder only), note that — the extractor won't get research-direction steering. Search `wiki/` for entities and concepts that overlap (`obsidian search query="..." path=wiki` preferred; `grep -ri "..." wiki/` fallback). Present to the human, before any page writes:
+**precheck** — Read `CLAUDE.md`, `purpose.md`, `wiki/handoff.md`, and the source end to end. If `purpose.md` is empty (placeholder only), note that — the extractor won't get research-direction steering. The handoff tells you what the last session was working on; it can change which overlaps matter. Search `wiki/` for entities and concepts that overlap (`obsidian search query="..." path=wiki` preferred; `grep -ri "..." wiki/` fallback). Present to the human, before any page writes:
 
 1. **Citation** — author(s), year, title, venue.
 2. **Key takeaways** — 4-8 substantive claims you'd extract.
@@ -112,6 +112,14 @@ A summary to the user:
 - Auditor's gap report inline, so the human can triage in place.
 - (Full ingest) Extractor `surprises` and `unresolved_during_extraction` highlighted separately.
 - A reminder to commit when ready. **Do not auto-commit.**
+
+After the summary, append an entry to `wiki/handoff.md` capturing what
+was ingested, anything left in flight (e.g., audit gaps the human will
+triage later), and notes a future session needs. If the ingest forced
+a non-obvious structural choice (page split, callout type chosen on a
+judgment call, alias rules, scope decisions), append a one-paragraph
+rationale to `wiki/decisions.md`. Skip both for trivial re-audits with
+no findings.
 
 ## Error handling
 

@@ -16,7 +16,9 @@ pattern, or receive a correction, file it as a convention:
   make sense in this wiki's subject area) go in `wiki/conventions.md`.
   These stay with the vault and do not propagate to other wikis.
 
-Read both at the start of every operation.
+Read both at the start of every operation. Also read `wiki/handoff.md`
+to pick up what the last session was working on; append at session end
+if the session did substantive work.
 
 ## Specifications (Strict)
 
@@ -32,6 +34,15 @@ These data contracts enable tooling. Do not deviate from them.
   - `wiki/synthesis.md` — Evolving high-level synthesis. Revise on every ingest.
   - `wiki/conventions.md` — Domain-specific conventions owned by this
     vault. Read at the start of every operation. Append as patterns emerge.
+  - `wiki/handoff.md` — Cross-session continuity. Read at session start;
+    append at session end. See "Session Continuity" under Guidance.
+  - `wiki/backlog.md` — Prioritized queue of open questions and unverified
+    claims. See "Backlog" under Guidance.
+  - `wiki/decisions.md` — Append-only log of structural decisions and the
+    rationale behind them. See "Decisions Log" under Guidance.
+  - `wiki/docs/graph-protocol.md` — Definitive reference for node types,
+    edge types, and bidirectionality rules. Read before extracting or
+    auditing if you need to refresh on graph invariants.
   - `wiki/entities/` — Entity pages (people, orgs, tools, places).
   - `wiki/concepts/` — Concept pages (ideas, theories, patterns).
   - `wiki/sources/` — Source summary pages (one per raw source).
@@ -42,7 +53,7 @@ These data contracts enable tooling. Do not deviate from them.
 
 ### Frontmatter (Required on Every Wiki Page)
 
-type: entity | concept | source-summary | comparison | synthesis
+type: entity | concept | source-summary | comparison | synthesis | meta
 sources: []          # Wikilinks to source summary pages
 created: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"
@@ -56,6 +67,13 @@ Additional by type:
   extractors to dedup on ingest and by lint to flag collisions.
 - source-summary: raw_path (string), raw_hash (string, SHA256 of raw source)
 - comparison: subjects (list of wikilinks)
+- meta: no additional fields. Used for infrastructure pages (handoff,
+  backlog, decisions, graph-protocol). These pages stay out of the
+  knowledge graph — they're exempt from the index requirement and from
+  the Title Case filename rule, but still get full frontmatter and TLDR
+  validation. `wiki/index.md`, `wiki/log.md`, and `wiki/conventions.md`
+  are legacy plain-markdown pages that pre-date this type and remain
+  exempt from page-shape checks; new infrastructure pages use `type: meta`.
 
 ### TLDR (Required)
 
@@ -74,6 +92,19 @@ obvious — use `[!analysis]`, not `[!source]`.
 
 When multiple sources support the same claim, cite all of them:
 `> [!source] Claim text. [[Source A]], [[Source B]], [[Source C]]`
+
+When new evidence confirms or contradicts a past `[!analysis]`, attach
+a follow-up directly below the original — do not rewrite the original:
+
+```
+> [!analysis] Original inference. (reasoning)
+> **[YYYY-MM-DD update]:** Confirmed by [[New Source]].
+```
+
+The point is a track record. Over time, the wiki accumulates evidence
+about which kinds of inferences held up and which didn't, which the
+agent can use to calibrate confidence on similar inferences. Rewriting
+the original loses that signal.
 
 ### Cross-References
 
@@ -364,6 +395,45 @@ all content represents your integrated understanding. Write in prose
 without per-claim callout wrappers. If you reference a specific source
 directly, use a `[!source]` callout for that claim. Otherwise, the page
 is implicitly `[!analysis]`.
+
+### Session Continuity
+
+`wiki/handoff.md` carries state that `wiki/log.md` doesn't: the
+*current state of attention*, not just the history of operations.
+Read it at the start of every session before any other work. It tells
+you what was last worked on, what's still in progress, and what's
+blocked. At the end of every session that does substantive work,
+append an entry — what you worked on, what was deferred, what the
+next session needs to know.
+
+Skip the append for trivial sessions (single-question lookups that
+don't change the wiki). The handoff is for work that needs follow-up.
+
+### Backlog
+
+`wiki/backlog.md` is a prioritized queue of open questions and
+unverified claims. Inline `[!gap]` and `[!unverified]` callouts mark a
+gap *where it lives* — useful for the page, but invisible at the wiki
+level. The backlog promotes the ones that matter into a single ranked
+queue with a `Review By` date so they get triaged on a cadence.
+
+Items get there by promotion (during ingest, query, or lint) when
+they meet one of the criteria documented in `wiki/backlog.md`.
+Routine `[!gap]` callouts on leaf pages stay inline. The backlog is
+for items the agent or human actively wants to triage, not every gap.
+
+### Decisions Log
+
+`wiki/decisions.md` is an append-only log of structural decisions and
+the *rationale* behind them — the reasoning that gets lost between
+sessions. Append an entry when you make a non-obvious structural
+choice: a page split, a callout type chosen on a judgment call, a new
+convention adopted, a hypothesis or comparison scoped a particular way
+after weighing alternatives.
+
+Skip the entry when the rationale is obvious from the diff. Do not
+rewrite past entries; if a decision is later reversed, append a new
+entry referencing the original.
 
 ## Wiki Conventions (Domain-General)
 

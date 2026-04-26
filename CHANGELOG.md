@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-04-26 — Revision 14
+
+State-tracking layer lifted from real-world wikis. Two specialized vaults (Investments, SupplementsResearch) independently invented session continuity, prioritized backlog, structural decisions log, and a calibration trail for analyses. Promoting these patterns into the base scaffold so every new wiki gets them by default.
+
+### Added
+
+- **`type: meta` for infrastructure pages.** New frontmatter type for pages that are infrastructure rather than knowledge nodes. Meta pages get full frontmatter and TLDR validation but are exempt from the index requirement and the Title Case filename rule. Used by the new state-tracking pages below. (`wiki-base/CLAUDE.md`, `wiki-base/scripts/wiki-lint.py`)
+- **`wiki/handoff.md`.** Cross-session continuity. Read at session start; append at session end. Captures *current state of attention* (what was last worked on, what's deferred, what's blocked) — distinct from `wiki/log.md`, which records the history of operations. (`wiki-base/wiki/handoff.md`, `wiki-base/CLAUDE.md`, `wiki-base/.claude/skills/wiki-ingest/SKILL.md`, `wiki-base/.claude/skills/wiki-query/SKILL.md`)
+- **`wiki/backlog.md`.** Prioritized queue of open questions and unverified claims. Inline `[!gap]` and `[!unverified]` callouts surface gaps where they live; the backlog promotes the ones that need triage into a single ranked list with a `Review By` date. (`wiki-base/wiki/backlog.md`, `wiki-base/CLAUDE.md`, `wiki-base/.claude/skills/wiki-query/SKILL.md`, `wiki-base/.claude/skills/wiki-lint/SKILL.md`)
+- **`wiki/decisions.md`.** Append-only log of structural decisions and the rationale behind them. Captures the reasoning that gets lost between sessions — why a page was split, why a callout type was chosen on a judgment call, why a hypothesis was scoped a particular way. (`wiki-base/wiki/decisions.md`, `wiki-base/CLAUDE.md`, `wiki-base/.claude/skills/wiki-ingest/SKILL.md`)
+- **`wiki/docs/graph-protocol.md`.** Definitive reference for node types, edge types, and bidirectionality rules. Consolidates graph contracts that were scattered across `CLAUDE.md` so the extractor and auditor have a single page to refresh on. (`wiki-base/wiki/docs/graph-protocol.md`)
+- **Calibration follow-up pattern in claim typing.** When new evidence confirms or contradicts a past `[!analysis]`, attach a dated follow-up directly below the original instead of rewriting it. Builds a track record of which inferences held up. (`wiki-base/CLAUDE.md`, `wiki-base/wiki/docs/graph-protocol.md`)
+- **`extract_wikilink_targets` now skips code.** Wikilinks inside fenced code blocks and inline code spans are no longer required to resolve, matching how Obsidian renders them (as plain text, not links). Fixes false-positive unresolved-link findings on documentation pages that show example wikilinks. (`wiki-base/scripts/wiki-lint.py`, `tests/test_smoke.py`)
+
+### Changed
+
+- **`new-wiki.sh` substitutes `{{date}}` in all scaffolded singletons.** The date-substitution loop now covers `synthesis.md`, `handoff.md`, `backlog.md`, `decisions.md`, and `docs/graph-protocol.md`, so a fresh vault passes lint on day 1. With `--into`, files that already exist are preserved without rewriting their dates. (`scripts/new-wiki.sh`)
+- **`wiki-doctor.sh` checks for the new state-tracking files.** Reports a warning (not failure) when a meta file is missing, so existing vaults can adopt the layer at their own pace via `new-wiki.sh --into`. (`wiki-base/scripts/wiki-doctor.sh`)
+- **Skills now read `wiki/handoff.md`.** `/wiki-ingest` reads it during pre-check and appends an entry at session end; `/wiki-query` reads it before planning the read; `/wiki-lint` flags handoff currency and surfaces overdue backlog items. (`wiki-base/.claude/skills/wiki-ingest/SKILL.md`, `wiki-base/.claude/skills/wiki-query/SKILL.md`, `wiki-base/.claude/skills/wiki-lint/SKILL.md`)
+- **Health summary tallies meta pages.** `wiki-lint.py --summary` now reports the meta-page count alongside sources/entities/concepts/comparisons/synthesis, and excludes meta pages from the open-gaps and source-without-analysis tallies (their gaps are surfaced inside the backlog, not the page). (`wiki-base/scripts/wiki-lint.py`)
+
 ## 2026-04-21 — Revision 13
 
 Installer fixes and a non-destructive way to add the skeleton to an existing project.

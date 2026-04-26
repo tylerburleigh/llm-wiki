@@ -86,12 +86,22 @@ fi
 mkdir -p "$TARGET"
 TARGET_ABS="$(cd "$TARGET" && pwd)"
 
-# Remember whether synthesis.md was already present before rsync so we
-# don't rewrite {{date}} placeholders in a user-authored file.
-SYNTHESIS_PRE_EXISTED=0
-if [[ "$INTO" -eq 1 && -f "$TARGET_ABS/wiki/synthesis.md" ]]; then
-  SYNTHESIS_PRE_EXISTED=1
-fi
+# Remember which singleton files were already present before rsync so we
+# don't rewrite {{date}} placeholders in user-authored files.
+DATE_FILES=(
+  "wiki/synthesis.md"
+  "wiki/handoff.md"
+  "wiki/backlog.md"
+  "wiki/decisions.md"
+  "wiki/docs/graph-protocol.md"
+)
+declare -a PRE_EXISTED
+for i in "${!DATE_FILES[@]}"; do
+  PRE_EXISTED[$i]=0
+  if [[ "$INTO" -eq 1 && -f "$TARGET_ABS/${DATE_FILES[$i]}" ]]; then
+    PRE_EXISTED[$i]=1
+  fi
+done
 
 # rsync copies everything under wiki-base/ except:
 #   - .DS_Store (macOS noise)
@@ -128,15 +138,20 @@ for d in raw/assets wiki/entities wiki/concepts wiki/sources wiki/comparisons; d
   touch "$TARGET_ABS/$d/.gitkeep"
 done
 
-# Substitute {{date}} placeholders in wiki/synthesis.md so the spawned
-# vault passes wiki-lint on day 1. Templates in templates/ keep {{date}}
-# — those are instantiated by the Obsidian Templates plugin on create.
+# Substitute {{date}} placeholders in scaffolded singleton files so the
+# spawned vault passes wiki-lint on day 1. Templates in templates/ keep
+# {{date}} — those are instantiated by the Obsidian Templates plugin on
+# create.
 TODAY="$(date +%Y-%m-%d)"
-if [[ -f "$TARGET_ABS/wiki/synthesis.md" && "$SYNTHESIS_PRE_EXISTED" -eq 0 ]]; then
-  # portable in-place sed (macOS + linux)
-  sed -i.bak "s/{{date}}/$TODAY/g" "$TARGET_ABS/wiki/synthesis.md"
-  rm -f "$TARGET_ABS/wiki/synthesis.md.bak"
-fi
+for i in "${!DATE_FILES[@]}"; do
+  rel="${DATE_FILES[$i]}"
+  abs="$TARGET_ABS/$rel"
+  if [[ -f "$abs" && "${PRE_EXISTED[$i]}" -eq 0 ]]; then
+    # portable in-place sed (macOS + linux)
+    sed -i.bak "s/{{date}}/$TODAY/g" "$abs"
+    rm -f "$abs.bak"
+  fi
+done
 
 if [[ "$INIT_GIT" -eq 1 ]]; then
   (

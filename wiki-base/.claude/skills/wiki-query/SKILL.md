@@ -34,6 +34,7 @@ If the user's question is ambiguous about format, ask once; don't guess between 
 
 - Read `CLAUDE.md` at the vault root (frontmatter rules, claim typing, page naming, index format, writing style).
 - Read `wiki/conventions.md` (domain-specific conventions accumulated by this vault).
+- Read `wiki/handoff.md` to see what the last session was doing — it can change which pages count as "recent" or which gaps were already deferred.
 - Read `purpose.md`. If it is empty, note that — you have no research-direction steering and must rely on the question alone.
 - Read `wiki/index.md` in full. This is your map.
 
@@ -111,8 +112,11 @@ If during reading you notice:
 - A page with `updated` older than 30 days whose content no longer matches recent ingests.
 - An unanswered `[!gap]` that the current session could plausibly fill from a source already in the wiki.
 - A broken or unresolved wikilink.
+- A question the wiki couldn't answer that's worth tracking — promote it to `wiki/backlog.md` rather than leaving the gap inline-only.
 
 Report these to the user as observations at the end of the answer. Do **not** edit pages in response — that is `/wiki-repair`'s, `/wiki-ingest`'s, or `/wiki-lint`'s job depending on whether the work is a scoped correction, source refresh, or broader health pass. Mixing query with repair stretches the skill's contract and muddies what was changed when something goes wrong.
+
+For backlog promotions, you may add a row to `wiki/backlog.md` at the end of the query (it's append-only and low-risk). Mention the addition in your final summary.
 
 ### 8. Present to the user
 

@@ -56,14 +56,16 @@ Treat this as the first gate. Group the findings by category. If the script repo
 
 After the deterministic pass, perform the checks `wiki-lint.py` cannot do alone:
 
-- **Bare-claim review.** Flag prose that looks like a factual or analytical claim but sits outside a typed callout. Report as candidates, not verdicts. `wiki/synthesis.md` is exempt.
+- **Bare-claim review.** Flag prose that looks like a factual or analytical claim but sits outside a typed callout. Report as candidates, not verdicts. `wiki/synthesis.md` is exempt; `type: meta` pages are exempt.
 - **Sampled claim audit.** Select 2-3 `[!source]` claims, preferring claims not audited in recent lint log entries. Trace each claim back to the cited source-summary pages and verify support.
 - **Conceptual review.** Call out:
   - thinly sourced pages (`sources:` length 1)
   - pages with `[!source]` claims but no `[!analysis]`
   - hub pages (5+ backlinks) with stale `updated` dates
-  - unanswered `[!gap]` callouts
+  - unanswered `[!gap]` callouts that should be promoted to `wiki/backlog.md` (recurring across pages, blocking downstream work, or central to `purpose.md`)
   - entity/concept pairs that co-occur in source-summary pages but are not cross-linked
+- **Backlog triage.** Read `wiki/backlog.md`. Flag rows with a `Review By` date in the past (overdue) and rows older than the `Review By` window without a status update. Surface, do not auto-resolve.
+- **Handoff currency.** If `wiki/handoff.md` was last updated more than two weeks ago, note it — the wiki has been worked on without anyone updating the cross-session state. Not an error; an observation.
 
 Name specific pages and the reason they were flagged. Avoid generic maintenance advice.
 
