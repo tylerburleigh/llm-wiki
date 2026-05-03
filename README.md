@@ -96,6 +96,12 @@ Useful shell commands:
 | `llm-wiki-new <dir> [--git]` | Create a new wiki from `wiki-base/`. |
 | `llm-wiki-new <dir> --into` | Add missing scaffold files to an existing directory without overwriting files. |
 | `llm-wiki-doctor <dir>` | Check structure, lint status, optional tools, PDF support, and briefing output. |
+| `python3 scripts/wiki-ops.py stage-source <path>` | Copy or convert a source into the ingest-ready `raw/` shape. |
+| `python3 scripts/wiki-ops.py source-status <raw-path>` | Classify a raw source as new, matching, drifted, or ambiguous. |
+| `python3 scripts/wiki-ops.py affected-pages <source-summary>` | List source-citing knowledge pages and meta pages for audit or refresh scope. |
+| `python3 scripts/wiki-ops.py append-audit <source-summary> <audit-report-or-stdin>` | Append or replace the source-summary extraction coverage callout. |
+| `python3 scripts/wiki-ops.py manifest new <raw-path>` | Create a local JSON operation manifest under `wiki/.ops/`. |
+| `python3 scripts/wiki-ops.py manifest show <manifest-path>` | Print a local operation manifest without mutating it. |
 | `python3 scripts/wiki-lint.py --briefing` | Print page counts, recent activity, gaps, stale hubs, hash drift, and dashboard freshness. |
 | `python3 scripts/wiki-lint.py --rebuild-index` | Rebuild `wiki/index.md` from page frontmatter and TLDRs. |
 
@@ -106,6 +112,7 @@ A generated wiki starts with a set of human-readable surfaces, not just a schema
 | Path | Purpose |
 | --- | --- |
 | `purpose.md` | Human-owned research direction. The agent reads it but does not edit it. |
+| `AGENTS.md` | Codex entrypoint; points to `CLAUDE.md` as the canonical wiki schema. |
 | `raw/` | Immutable source material. |
 | `wiki/dashboard.md` | Session-start front door: current answer, recent activity, gaps, debates, stale areas, and reading routes. |
 | `wiki/synthesis.md` | Current integrated view across sources. |
@@ -115,6 +122,7 @@ A generated wiki starts with a set of human-readable surfaces, not just a schema
 | `wiki/backlog.md` | Open questions, important gaps, and unverified claims. |
 | `wiki/handoff.md` | Cross-session state: what was last worked on, deferred, or blocked. |
 | `wiki/decisions.md` | Structural decisions and rationale. |
+| `wiki/.ops/` | Local JSON operation manifests from `wiki-ops`; ignored by git and outside the knowledge graph. |
 | `wiki/entities/` | People, organizations, tools, systems, datasets, products, projects. |
 | `wiki/concepts/` | Ideas, methods, metrics, mechanisms, definitions, recurring patterns. |
 | `wiki/sources/` | One source summary per raw source. |
@@ -190,8 +198,11 @@ If you stop using Obsidian, the wiki remains a directory of markdown files.
 | Path | Description |
 | --- | --- |
 | `wiki-base/` | Scaffold copied by `llm-wiki-new` when creating a fresh wiki. |
+| `wiki-base/AGENTS.md` | Codex-facing scaffold instructions for generated wikis. |
+| `wiki-base/.agents/` | Codex-facing mirrors of the Claude Code agents and skills. |
 | `scripts/new-wiki.sh` | Creates a new wiki from `wiki-base/`. |
 | `scripts/wiki-doctor.sh` | Runs structure and health checks against a wiki. |
+| `wiki-base/scripts/wiki-ops.py` | Deterministic source staging, status, scope, audit append, and manifest primitives copied into generated wikis. |
 | `install.sh` | Installs or updates local launcher commands. |
 | `plan.md` | Progressive-disclosure implementation plan. |
 | `PHILOSOPHY.md` | Longer design rationale. |

@@ -20,6 +20,12 @@ You have `Read`, `Glob`, `Grep`, and `Bash`. Use `Bash` for read-only Obsidian C
 - `pages_updated` — list of paths the extractor modified, with what was added (you compare additions, not whole pages)
 - `today_iso` — today's date
 
+For audit-only runs, the orchestrator may derive scope with
+`python3 scripts/wiki-ops.py affected-pages <source-summary>` and pass
+the returned `knowledge_pages` as `pages_created` with `pages_updated`
+empty. Do not audit `meta_pages` as extraction coverage; those are
+navigation and session surfaces, not source-derived knowledge pages.
+
 ## What you do
 
 1. **Read the source** at `source_md_path` end to end. Take it on its own terms — note what topics, taxonomies, definitions, examples, counterexamples, named methods, and explicit caveats appear in it. Do not look at the wiki pages first; that biases what you notice.

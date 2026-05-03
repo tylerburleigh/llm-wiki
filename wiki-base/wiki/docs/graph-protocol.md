@@ -78,6 +78,20 @@ The lint pass *reports but does not fail* on these (judgment-dependent):
 
 When in doubt, follow the newer pattern: give a new infrastructure page `type: meta` with frontmatter rather than adding it to the legacy SPECIAL_FILES list.
 
+## Operational State
+
+`wiki/.ops/` is reserved for local JSON operation manifests. These files record operation state such as source paths, hash status, planned pages, touched pages, auditor reports, deferred items, and timestamps. They are not wiki pages, graph nodes, sources, or index entries. Do not wikilink them from content.
+
+## Affected-Page Discovery
+
+`python3 scripts/wiki-ops.py affected-pages <source-summary>` is the
+deterministic way to ask "what pages cite this source?" The command
+accepts a source-summary path, stem, or wikilink, then scans both
+frontmatter `sources:` and body wikilinks. It returns source-citing
+knowledge pages separately from `type: meta` pages. Use the knowledge
+page list for audit and refresh scope; use the meta-page list only as a
+reminder to update navigation or session surfaces when relevant.
+
 ## Graph Assembly Dependencies
 
 A substantive ingest leaves the graph coherent: provenance resolves,

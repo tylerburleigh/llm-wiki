@@ -50,6 +50,9 @@ fi
 if [[ ! -f "$ROOT/scripts/wiki-lint.py" ]]; then
   say_fail "vault" "missing scripts/wiki-lint.py under $ROOT"
 fi
+if [[ ! -f "$ROOT/scripts/wiki-ops.py" ]]; then
+  say_warn "vault" "missing scripts/wiki-ops.py under $ROOT (run new-wiki.sh --into to scaffold)"
+fi
 for state_file in \
   "wiki/dashboard.md" \
   "wiki/debates.md" \

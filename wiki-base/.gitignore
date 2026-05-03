@@ -4,6 +4,7 @@
 .trash/
 .claude/settings.local.json
 .codex
+wiki/.ops/
 __pycache__/
 *.py[cod]
 .pytest_cache/

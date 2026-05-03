@@ -1,6 +1,6 @@
 ---
 name: wiki-ingest
-description: Ingest a source into the LLM wiki, or re-audit a past ingest. Use when the user asks to ingest a source ("ingest the source at raw/foo.pdf", "/wiki-ingest raw/foo.md", "add this paper to the wiki") or to audit a past ingest ("/wiki-ingest --audit-only <source>", "audit the Williamson ingest", "what did we miss in <source>?"). You compose six building blocks (stage, hash, precheck, extract, audit, append-audit) following the principles below. The agent decides the order; common compositions are listed. Does not commit to git; the human reviews first.
+description: Ingest a source into the LLM wiki, or re-audit a past ingest. Use when the user asks to ingest a source ("ingest the source at raw/foo.pdf", "/wiki-ingest raw/foo.md", "add this paper to the wiki") or to audit a past ingest ("/wiki-ingest --audit-only <source>", "audit the Williamson ingest", "what did we miss in <source>?"). You compose wiki-ops primitives plus precheck, extraction, and audit judgment. The agent decides the order; common compositions are examples. Does not commit to git; the human reviews first.
 ---
 
 # wiki-ingest
@@ -13,30 +13,49 @@ Three principles underlie the work:
 - **Epistemic integrity.** Every claim the extractor writes is typed (`[!source]`, `[!analysis]`, `[!unverified]`, `[!gap]`); promoting inference to sourced fact poisons everything built on it.
 - **Human as editor-in-chief.** You propose; the human reviews and commits.
 
-You have six building blocks. Compose them. The principles below describe *when and why* each applies; the common compositions describe the typical paths. The agent decides the order.
+You have deterministic primitives plus judgment-heavy blocks. Compose them. The principles below describe *when and why* each applies; the common compositions describe typical paths, not a mandatory pipeline. The agent decides the order.
 
 ## Building blocks
 
 **stage** — Ensure the source is in `raw/` and has a markdown form the extractor can read.
 
-- If PDF: convert to markdown via `pymupdf4llm`. Store the converted `.md` alongside the original. The original PDF is the immutable artifact.
-  ```bash
-  python3 -c "import pymupdf4llm; open('raw/<name>.md','w').write(pymupdf4llm.to_markdown('raw/<name>.pdf'))"
-  ```
-- If already markdown: it should be at `raw/<name>.md`. If the user gave a path outside `raw/`, copy it in first. Never read from outside `raw/` for ingestion.
-- Returns: `raw_path` (the original — PDF for PDFs, `.md` for markdown sources), `source_md_path` (the markdown form).
-
-**hash** — Compute SHA256 of the original file and compare to any stored `raw_hash` on an existing source-summary.
+Use the capability command:
 
 ```bash
-shasum -a 256 <raw_path>
+python3 scripts/wiki-ops.py stage-source <path>
 ```
 
-Status:
+Read the JSON. It returns `raw_path` (the original artifact), `source_md_path` (the markdown form), `source_kind`, `converted`, and `warnings`. If the source is already under `raw/`, it stays there. If the user gave a markdown or PDF path outside `raw/`, the command copies it into `raw/` without deleting or modifying the original. For PDFs, it writes a converted `.md` sibling when `pymupdf4llm` is installed; if conversion support is missing, stop and surface the command error.
+
+**status** — Classify the staged raw source before write-heavy work.
+
+```bash
+python3 scripts/wiki-ops.py source-status <raw-path>
+```
+
+Read the JSON status:
 
 - **new** — no existing source-summary; proceed to full ingest.
 - **match** — source unchanged since last ingest; skip extract, run audit against existing pages.
 - **drift** — source has changed since last ingest; stop and ask the human whether to refresh affected pages or treat as a new source. Never silently overwrite.
+- **ambiguous** — multiple source summaries claim the same raw path; stop and ask the human which source-summary, if any, is authoritative.
+
+**scope** — Find pages affected by a source-summary.
+
+```bash
+python3 scripts/wiki-ops.py affected-pages <source-summary>
+```
+
+The `<source-summary>` argument may be a path, page stem, or wikilink. Use `knowledge_pages` as the audit or refresh scope. `meta_pages` are reported separately; treat them as surfaces to update after content changes, not pages the auditor should score as source extraction.
+
+**manifest** — Preserve operation state when it helps review or handoff.
+
+```bash
+python3 scripts/wiki-ops.py manifest new <raw-path>
+python3 scripts/wiki-ops.py manifest show <manifest-path>
+```
+
+Use a manifest for non-trivial ingests, drift decisions, long sessions, or handoff-prone work. It is a reviewable record under `wiki/.ops/`, not a workflow engine. If you maintain it during the session, keep fields like `precheck_summary`, `planned_pages`, `touched_pages`, `auditor_report`, and `deferred_items` factual.
 
 **precheck** — Read `CLAUDE.md`, `purpose.md`, `wiki/dashboard.md`, `wiki/handoff.md`, and the source end to end. If `purpose.md` is empty (placeholder only), note that — the extractor won't get research-direction steering. The dashboard and handoff tell you what the current entry points and active state are; they can change which overlaps matter. Search `wiki/` for entities and concepts that overlap (`obsidian search query="..." path=wiki` preferred; `grep -ri "..." wiki/` fallback). Present to the human, before any page writes:
 
@@ -52,15 +71,22 @@ End with "Proceed?". Skip in batch mode (when the user has said "skip the pre-ch
 
 **audit** (subagent: `wiki-auditor`) — Invoke **independently**. Pass no extractor reasoning. The auditor reads the source fresh against the pages; that independence is the point.
 
-Pass: `source_md_path`, `source_summary_path`, `pages_created` (paths), `pages_updated` (paths plus `what_changed` summary), `today_iso`. For audit-only, derive `pages_created` from frontmatter backlinks (see composition below).
+Pass: `source_md_path`, `source_summary_path`, `pages_created` (paths), `pages_updated` (paths plus `what_changed` summary), `today_iso`. For audit-only, derive `pages_created` from `affected-pages` `knowledge_pages` (see composition below).
 
-**append-audit** — Edit the source-summary. Add or replace a `[!gap] Extraction coverage of this ingest (self-audit, <today_iso>)` callout with the auditor's findings. If a prior audit callout exists, replace it; do not stack stale audits. If the human wants history preserved, rename the prior one to `... — superseded` and append the new.
+**append-audit** — Safely append or replace the extraction coverage callout.
+
+```bash
+python3 scripts/wiki-ops.py append-audit <source-summary> <audit-report.md>
+python3 scripts/wiki-ops.py append-audit <source-summary> -
+```
+
+The command adds or replaces the `[!gap] Extraction coverage of this ingest` callout, preserves surrounding non-audit content, and updates the source-summary `updated:` date. If the human wants old audit history preserved, copy the prior audit into a separate decision or handoff note before running the command; do not stack stale extraction coverage callouts on the source-summary.
 
 ## Principles
 
-**Stage before you read.** Sources come in many formats. The markdown form is what extract and audit read; the original is what hash fingerprints.
+**Stage before you read.** Sources come in many formats. The markdown form is what extract and audit read; the original is what `source-status` fingerprints.
 
-**Hash before you write.** Match means skip extract. Drift means stop and ask. A re-ingest that silently overwrites conflates "source updated" with "extraction refined."
+**Classify before you write.** Match means skip extract. Drift and ambiguous matches mean stop and ask. A re-ingest that silently overwrites conflates "source updated" with "extraction refined."
 
 **Pre-check before the human approves.** Page writes are expensive to unwind, so the pre-check is the human's only checkpoint before wiki state changes shape. Batch mode is the exception, calibrated after a history of reviewed ingests.
 
@@ -78,7 +104,7 @@ Pass: `source_md_path`, `source_summary_path`, `pages_created` (paths), `pages_u
 
 The user's phrasing signals which composition applies:
 
-- **"/wiki-ingest <path>"** or **"add this paper"** → new or unchanged source; hash decides which.
+- **"/wiki-ingest <path>"** or **"add this paper"** → new, unchanged, drifted, or ambiguous source; `source-status` decides which.
 - **"/wiki-ingest --audit-only <X>"**, **"audit the X ingest"**, **"what did we miss in X?"** → audit-only.
 - **Vague reference** (e.g., "the Williamson paper") → search `wiki/sources/` and confirm with the human before proceeding.
 
@@ -86,19 +112,21 @@ If no source path is given, ask. Do not invent.
 
 ## Common compositions
 
-**New source.** stage → hash (new) → precheck → (human approves) → extract → (if surprises, pause and surface) → audit → append-audit → summarize.
+**New source.** stage-source → source-status (`new`) → optional manifest → precheck → (human approves) → extract → (if surprises, pause and surface) → audit → append-audit → summarize.
 
-**Unchanged source (re-ingest).** stage → hash (match) → tell the user why extract is skipped (source unchanged; re-extracting would duplicate work) → audit → append-audit → summarize.
+**Unchanged source (re-ingest).** stage-source → source-status (`match`) → tell the user why extract is skipped (source unchanged; re-extracting would duplicate work) → affected-pages → audit → append-audit → summarize.
 
-**Drifted source.** stage → hash (drift) → stop. Ask the human: refresh affected pages (re-extract over the existing pages) or treat as a new source?
+**Drifted source.** stage-source → source-status (`drift`) → affected-pages for review scope → stop. Ask the human: refresh affected pages (re-extract over the existing pages) or treat as a new source?
 
-**Audit-only.** Locate the source-summary (search `wiki/sources/` on a vague reference; confirm with the user if multiple match). Verify the raw source still matches the stored `raw_hash` — a mismatch means the source has drifted; stop and recommend full re-ingest (do not audit; the gap list would conflate "we missed this" with "this didn't exist at ingest"). If the raw is a PDF, ensure the converted `.md` exists in `raw/`; regenerate via `pymupdf4llm` if missing. Find all linked pages via frontmatter:
+**Ambiguous source status.** stage-source → source-status (`ambiguous`) → stop. Surface the claiming source-summary paths and ask the human which record is authoritative before extract, audit, or repair.
+
+**Audit-only.** Locate the source-summary (search `wiki/sources/` on a vague reference; confirm with the user if multiple match). Read its `raw_path`, then run `source-status <raw_path>`. A status other than `match` means the source has drifted or the provenance record is ambiguous; stop and recommend full re-ingest or human resolution. Do not audit, because the gap list would conflate "we missed this" with "this didn't exist at ingest." If the raw is a PDF and the converted `.md` sibling is missing, run `stage-source <raw_path>` to regenerate it. Find all linked pages:
 
 ```bash
-grep -rl "\[\[<source-summary-stem>\]\]" wiki/
+python3 scripts/wiki-ops.py affected-pages <source-summary>
 ```
 
-Pass that list as `pages_created` to the auditor, `pages_updated` = `[]`. The auditor doesn't care whether pages came from the original ingest or were added later. audit → append-audit → summarize.
+Pass `knowledge_pages` as `pages_created` to the auditor, `pages_updated` = `[]`. The auditor doesn't care whether pages came from the original ingest or were added later. audit → append-audit → summarize.
 
 **Extractor surprises.** Pause between extract and audit. Surface the surprises to the human (e.g., an entity already existed that the plan missed). Ask whether to proceed.
 
@@ -124,7 +152,7 @@ no findings.
 
 ## Error handling
 
-- **`pymupdf4llm` not installed.** Stop, tell the user to run `python3 -m pip install -r requirements.txt`.
+- **`pymupdf4llm` not installed.** `stage-source` returns `pdf_conversion_unavailable`. Stop, tell the user to run `python3 -m pip install -r requirements.txt`.
 - **Hash mismatch on audit-only.** Source has drifted since ingestion. Stop; recommend full re-ingest. Do not audit.
 - **Attribution-mismatch anomalies.** Potential extraction errors, not extraction gaps. Surface prominently.
 
@@ -132,5 +160,5 @@ no findings.
 
 - Commit to git. The human reviews and commits.
 - Run `/wiki-lint`. Lint is a separate operation.
-- Modify `CLAUDE.md`, `purpose.md`, `writing-style.md`, or anything in `raw/`.
+- Modify `CLAUDE.md`, `purpose.md`, `writing-style.md`, or anything in `raw/` except through `stage-source` staging/conversion.
 - Bulk-ingest. One source per invocation. Long sources are split into chapters/sections by the user; each chunk is a separate invocation.

@@ -13,14 +13,18 @@ Two principles shape the work:
 
 ## Inputs you will receive
 
-The orchestrator passes you a JSON-ish brief with:
+The orchestrator passes you a JSON-ish brief. It should already have run
+`python3 scripts/wiki-ops.py stage-source <path>` and
+`python3 scripts/wiki-ops.py source-status <raw_path>` before invoking you.
+The brief includes:
 
-- `source_md_path` — path to the markdown form of the source (raw `.md`, or pymupdf4llm-converted from a PDF)
+- `source_md_path` — path to the markdown form of the source returned by `stage-source` (raw `.md`, or pymupdf4llm-converted from a PDF)
 - `raw_path` — path to the original source file (the immutable artifact; for PDFs this is the `.pdf`, for markdown sources it is the same as `source_md_path`)
 - `raw_hash` — SHA256 of the file at `raw_path`
 - `today_iso` — today's date in ISO 8601 (`YYYY-MM-DD`)
 - `plan` — an approved plan with: source-summary filename, list of entity pages to create, list of concept pages to create, list of existing pages to update with what to add to each, and any flagged contradictions
 - `purpose_md` — the contents of `purpose.md` (may be empty placeholder; if empty, do not invent research direction)
+- `manifest_path` — optional path under `wiki/.ops/` for operation state; do not depend on it for schema truth
 
 ## What you do
 
@@ -73,4 +77,4 @@ A structured report (markdown is fine) with:
 - **Do not perform the post-extraction audit.** A separate auditor subagent will read your output against the source and produce the gap list. Don't pre-empt it; you'll just blunt the audit's independence.
 - **Do not commit to git.** The orchestrator surfaces results to the human, who reviews and decides.
 - **Do not fabricate.** If a claim isn't in the source, it's an `[!analysis]` (your inference, with reasoning shown) or an `[!unverified]` or a `[!gap]`. Never an unattributed `[!source]`. If a figure or formula was dropped in PDF→markdown conversion (`==> picture [N x N] intentionally omitted <==`), any reconstruction goes in `[!unverified]`, not `[!source]` — the source figure is authoritative and we do not have it.
-- **Do not modify `purpose.md`, `writing-style.md`, `CLAUDE.md`, `wiki/conventions.md`, or anything in `raw/`.** These are human-owned (purpose, writing-style) or immutable (raw). The "Wiki Conventions (Domain-General)" section of CLAUDE.md and `wiki/conventions.md` may be appended-to but only via the orchestrator after human review of corrections, not by you.
+- **Do not modify `purpose.md`, `writing-style.md`, `CLAUDE.md`, `wiki/conventions.md`, `wiki/.ops/`, or anything in `raw/`.** These are human-owned (purpose, writing-style), operational (manifest), or immutable (raw). The "Wiki Conventions (Domain-General)" section of CLAUDE.md and `wiki/conventions.md` may be appended-to but only via the orchestrator after human review of corrections, not by you.

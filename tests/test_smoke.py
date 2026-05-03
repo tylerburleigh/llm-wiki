@@ -30,8 +30,13 @@ class SmokeTests(unittest.TestCase):
             )
             self.assertEqual(created.returncode, 0, created.stderr)
             self.assertTrue((target / "scripts/wiki-lint.py").is_file())
+            self.assertTrue((target / "scripts/wiki-ops.py").is_file())
             self.assertTrue((target / "scripts/wiki-doctor.sh").is_file())
+            self.assertTrue((target / "AGENTS.md").is_file())
+            self.assertTrue((target / ".agents/README.md").is_file())
             self.assertTrue((target / ".claude/skills/wiki-repair/SKILL.md").is_file())
+            self.assertTrue((target / ".agents/skills/wiki-repair/SKILL.md").is_file())
+            self.assertTrue((target / ".agents/agents/wiki-extractor.md").is_file())
 
             synthesis = (target / "wiki/synthesis.md").read_text(encoding="utf-8")
             self.assertNotIn("{{date}}", synthesis)
@@ -85,6 +90,10 @@ class SmokeTests(unittest.TestCase):
 
             # Skeleton laid down alongside them.
             self.assertTrue((target / "scripts/wiki-doctor.sh").is_file())
+            self.assertTrue((target / "scripts/wiki-ops.py").is_file())
+            self.assertTrue((target / "AGENTS.md").is_file())
+            self.assertTrue((target / ".agents/README.md").is_file())
+            self.assertTrue((target / ".agents/skills/wiki-ingest/SKILL.md").is_file())
             self.assertTrue((target / "wiki/synthesis.md").is_file())
             self.assertTrue((target / "wiki/entities/.gitkeep").is_file())
 
@@ -112,6 +121,19 @@ class SmokeTests(unittest.TestCase):
             self.assertEqual(doctor.returncode, 0, doctor.stdout + doctor.stderr)
             self.assertIn("Wiki doctor: OK", doctor.stdout)
             self.assertNotIn("FAIL lint:", doctor.stdout)
+
+    def test_doctor_warns_when_wiki_ops_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "example"
+            created = run(["bash", "scripts/new-wiki.sh", str(target)])
+            self.assertEqual(created.returncode, 0, created.stderr)
+            (target / "scripts/wiki-ops.py").unlink()
+
+            doctor = run(["bash", "scripts/wiki-doctor.sh", str(target)])
+
+            self.assertEqual(doctor.returncode, 0, doctor.stdout + doctor.stderr)
+            self.assertIn("WARN vault: missing scripts/wiki-ops.py", doctor.stdout)
+            self.assertIn("Wiki doctor: OK", doctor.stdout)
 
     def test_lint_fallback_parser_handles_block_lists(self) -> None:
         lint_path = REPO_ROOT / "wiki-base/scripts/wiki-lint.py"
